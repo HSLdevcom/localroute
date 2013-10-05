@@ -244,7 +244,6 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 				row=[0,0];
 			}
 
-//console.log(depart+' '+wait+' '+(wait-prevWait));
 			row.push(gis.Q.fromSigned(wait-prevWait));
 		}
 
@@ -373,8 +372,6 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 					timeList[timeNum]=depart;
 				}
 
-//				tripList=[];
-
 				for(timeNum=0;timeNum<timeCount;timeNum++) {
 					depart=timeList[timeNum]*reach.trans.TripSet.tolerance;
 
@@ -383,11 +380,8 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 					trip.timeList=[depart];
 					trip.valid=valid;
 
-//					tripList.push(trip);
 					self.insert(trip);
 				}
-
-//				validGroupList[validNum]=tripList;
 
 				tripCount-=timeCount;
 				if(!tripCount) step++;
