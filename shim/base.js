@@ -16,6 +16,7 @@
 */
 
 var goog={
+	/** @type {Object.<*>} */
 	global:this,
 	/** @param {string} x */
 	provide:function(x) {

@@ -45,7 +45,7 @@ reach.trans.TripSet.prototype.insert=function(trip) {
 	return(trip);
 };
 
-/** @param {function()} write */
+/** @param {function(string)} write */
 reach.trans.TripSet.prototype.exportTempPack=function(write) {
 	var validGroupList;
 	var validNum,validCount;
@@ -78,6 +78,7 @@ reach.trans.TripSet.prototype.importTempPack=function(stream,keySet) {
 	var tripList;
 	var tripNum,tripCount;
 	var trip;
+	var fieldList;
 	var timeList;
 	var timeNum,timeCount;
 
@@ -101,52 +102,12 @@ reach.trans.TripSet.prototype.importTempPack=function(stream,keySet) {
 			timeList[timeNum]=+fieldList[timeNum+2];
 		}
 
-//if(timeList.length!=trip.key.line.stopList.length) console.log('ERROR');
 		trip.timeList=timeList;
 		trip.startTime=timeList[0];
 		tripList[tripNum]=trip;
 	}
 
 	this.list=tripList;
-};
-
-reach.trans.TripSet.prototype.addDurations=function() {
-	var tripList;
-	var tripNum,tripCount;
-	var trip;
-	var line;
-	var timeList;
-	var followerList;
-	var stopList;
-	var stopNum,stopCount;
-	var stop;
-	var duration,totalDuration;
-
-	tripList=this.list;
-	tripCount=this.count;
-
-	for(tripNum=0;tripNum<tripCount;tripNum++) {
-		trip=tripList[tripNum];
-		timeList=trip.timeList;
-
-		line=trip.key.line;
-		line.tripCount++;
-		followerList=line.followerList;
-		stopList=line.stopList;
-		stopCount=stopList.length;
-		totalDuration=0;
-
-		for(stopNum=0;stopNum<stopCount-1;stopNum++) {
-			stop=stopList[stopNum];
-			followerNum=followerList[stopNum];
-
-			duration=timeList[stopNum+1];
-			stop.durationsTo[followerNum].push(duration);
-			totalDuration+=duration;
-		}
-
-		trip.duration=totalDuration;
-	}
 };
 
 reach.trans.TripSet.prototype.groupTrips=function() {
@@ -161,9 +122,9 @@ reach.trans.TripSet.prototype.groupTrips=function() {
 
 	tripList=this.list;
 	tripCount=this.count;
-	validTbl={};
+	validTbl=/** @type {Object.<number,number>} */ ({});
 	validList=[];
-	validGroupList=[];
+	validGroupList=/** @type {Array.<Array.<reach.trans.Trip>>} */ ([]);
 	validCount=0;
 
 	for(tripNum=0;tripNum<tripCount;tripNum++) {
@@ -180,6 +141,8 @@ reach.trans.TripSet.prototype.groupTrips=function() {
 	}
 
 	for(validNum=0;validNum<validCount;validNum++) {
+		/** @param {reach.trans.Trip} a
+		  * @param {reach.trans.Trip} b */
 		validGroupList[validNum].sort(function(a,b) {return(a.key.id-b.key.id || a.timeList[0]-b.timeList[0]);});
 	}
 
@@ -195,6 +158,7 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 	var validNum,validCount;
 	var tripList;
 	var tripNum,tripCount;
+	var trip;
 	var depart,prevDepart,wait,prevWait;
 	var keyId,prevKeyId;
 	var row,data;
@@ -282,7 +246,8 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.KeySet} keySet */
+  * @param {reach.trans.KeySet} keySet
+  * @return {function():number} */
 reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 	/** @type {reach.trans.TripSet} */
 	var self=this;
@@ -291,6 +256,7 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 	var validNum;
 	/** @type {number} */
 	var validCount;
+	/** @type {number} */
 	var valid;
 	/** @type {number} */
 	var tripNum;
@@ -298,9 +264,11 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 	var tripLast;
 	/** @type {number} */
 	var tripCount;
+	/** @type {number} */
 	var keyId;
 	/** @type {gis.io.PackStream} */
 	var pack;
+	/** @type {Array.<number>} */
 	var dec;
 	/** @type {gis.enc.LZ} */
 	var lz;
@@ -313,6 +281,7 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 		var time;
 		var depart,wait;
 		var trip;
+		var txt;
 		var key;
 
 		switch(step) {
@@ -322,7 +291,7 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 
 				lz=new gis.enc.LZ();
 
-				dec=[];
+				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
 				validCount=dec[0];
 				validNum=0;

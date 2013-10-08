@@ -18,10 +18,7 @@
 */
 
 goog.provide('reach.trans.Stop');
-//goog.require('reach.road.Node');
-//goog.require('reach.util');
 goog.require('gis.MU');
-//goog.require('reach.data.QuadTreeItem');
 
 /** @constructor
   * @param {string} origId
@@ -53,28 +50,6 @@ reach.trans.Stop=function(origId,name,ll) {
 	this.cost;
 	/** @type {number} */
 	this.time;
-	/** @type {Array.<reach.road.Node>} Street network node that led to this stop. */
-	this.srcNodeList;
-	/** @type {Array.<reach.trans.Trip>} Trip along a transit line that led to this stop. */
-	this.srcTripList;
-	/** @type {Array.<number>} Offset of this stop along source trip. */
-	this.srcPosList;
-
-	// For backtracking.
-	/** @type {number} */
-	this.lastVisitTime;
-	/** @type {Array.<number>} */
-	this.lastTimeList;
-	/** @type {Array.<reach.trans.Trip>} */
-	this.lastTripList;
-	/** @type {Array.<{time:number,cost:number,trip:reach.trans.Trip}>} */
-	this.reverseDataList;
-	/** @type {reach.route.result.LegRef} */
-//	this.endWalk;
-
-	// Links connecting stop to road network.
-	/** @type {reach.road.Node} Nearest fast road graph node. */
-	this.node;
 
 	// Time table statistics used when compressing and decompressing.
 	/** @type {Object.<number,number>} */
@@ -83,92 +58,16 @@ reach.trans.Stop=function(origId,name,ll) {
 	this.followerList;
 	/** @type {number} */
 	this.followerCount;
-	/** @type {Array.<number>} */
-	this.packNumList;
+	/** @type {Object.<number,number>} */
+	this.packNumTbl;
 	/** @type {number} */
 	this.packCount;
-
-	/** @type {Array.<Array.<number>>} */
-	this.durationsTo;
-	/** @type {Array.<{mean:number,variance:number}>} */
-	this.statsTo;
-
-	/** @type {reach.loc.Location} */
-	this.loc;
 
 	/** @type {number} Number of departures around search start time, to evaluate stop niceness. */
 	this.departureCount;
 
 	/** @type {boolean} */
 	this.disabled;
-};
-
-/** @param {reach.trans.Stop} next
-  * @param {number} duration */
-/*
-reach.trans.Stop.prototype.addFollower=function(next,duration) {
-	var followerNum;
-
-*/
-//	if(!this.durationsTo) this.durationsTo=/** @type {Array.<Array.<number>>} */ [];
-/*
-	followerNum=this.followerTbl[next.id];
-	if(!followerNum && followerNum!==0) {
-//		followerNum=this.followerList.length;
-		followerNum=this.followerCount++;
-		this.followerTbl[next.id]=followerNum;
-//		this.followerList.push(next);
-*/
-//		this.durationsTo.push(/** @type {Array.<number>} */ ([duration]));
-/*
-	} else {
-		this.durationsTo[followerNum].push(duration);
-	}
-};
-*/
-
-// This is only used for compressing data.
-/** @param {number} statMul */
-reach.trans.Stop.prototype.calcStats=function(statMul) {
-	var followerNum,followerCount;
-	var sampleNum,sampleCount;
-	var stats;
-	var mean,stdDev;
-	var duration,err;
-	var durationList,filteredList;
-
-	followerCount=this.durationsTo.length;
-
-	for(followerNum=0;followerNum<followerCount;followerNum++) {
-		durationList=this.durationsTo[followerNum];
-		stats=gis.Q.getStats(durationList);
-
-		// Try to find errors if variance is over 1 minute.
-		if(stats.variance>1) {
-			sampleCount=durationList.length;
-			stdDev=Math.sqrt(stats.variance);
-			mean=stats.mean;
-
-			filteredList=[];
-
-			for(sampleNum=0;sampleNum<sampleCount;sampleNum++) {
-				duration=durationList[sampleNum];
-				err=(duration-mean)/stdDev;
-
-				// If difference from mean is 3 sigma or less, accept data point.
-				if(err>=-3 && err<=3) filteredList.push(duration);
-				//else console.log(this.name+' -> '+this.followerList[followerNum].name+' mean '+mean+' dev '+stdDev+' sample '+duration+' error '+err);
-			}
-
-			stats=gis.Q.getStats(filteredList);
-		}
-
-//console.log(stats.variance);
-		stats.mean=~~(stats.mean+0.5);
-		stats.variance=~~(stats.variance+0.5);
-
-		this.statsTo[followerNum]=stats;
-	}
 };
 
 /** @return {Array.<{time:number,trip:reach.trans.Trip}>} */

@@ -38,9 +38,11 @@ reach.trans.KeySet.prototype.insert=function(key) {
 	return(key);
 };
 
+/** @param {function(string)} write */
 reach.trans.KeySet.prototype.exportTempPack=function(write) {
 	var keyList;
 	var keyNum,keyCount;
+	var key;
 
 	keyList=this.list;
 	keyCount=this.count;
@@ -52,8 +54,11 @@ reach.trans.KeySet.prototype.exportTempPack=function(write) {
 	}
 };
 
+/** @param {gis.io.LineStream} stream
+  * @param {reach.trans.LineSet} lineSet */
 reach.trans.KeySet.prototype.importTempPack=function(stream,lineSet) {
 	var txt;
+	var fieldList;
 	var keyList;
 	var keyNum,keyCount;
 	var key;
@@ -118,11 +123,13 @@ reach.trans.KeySet.prototype.exportPack=function(stream,nameSet) {
 
 /** @param {gis.io.PackStream} stream
   * @param {reach.trans.LineSet} lineSet
-  * @param {reach.trans.NameSet} nameSet */
+  * @param {reach.trans.NameSet} nameSet
+  * @return {function():number} */
 reach.trans.KeySet.prototype.importPack=function(stream,lineSet,nameSet) {
-	/** @type {reach.trans.LineSet} */
+	/** @type {reach.trans.KeySet} */
 	var self=this;
 	var keyCount;
+	/** @type {Array.<number>} */
 	var dec;
 	var step;
 
@@ -134,7 +141,7 @@ reach.trans.KeySet.prototype.importPack=function(stream,lineSet,nameSet) {
 			case 0:
 				step++;
 
-				dec=[];
+				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
 				keyCount=dec[0];
 

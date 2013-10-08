@@ -26,9 +26,11 @@ goog.require('reach.trans.TripSet');
 goog.require('gis.io.LineStream');
 goog.require('gis.enc.CRC32');
 
-/** @constructor */
+/** @constructor
+  * @param {gis.util.Date=} date */
 reach.trans.TransSet=function(date) {
-	this.date=date;
+	/** @type {gis.util.Date} */
+	this.date=date||null;
 	/** @type {reach.trans.NameSet} */
 	this.nameSet=new reach.trans.NameSet();
 	/** @type {reach.trans.StopSet} */
@@ -63,10 +65,12 @@ reach.trans.TransSet.prototype.importTempPack=function(data) {
 	this.tripSet.importTempPack(stream,this.keySet);
 };
 
+/** @param {gis.io.PackStream} stream */
 reach.trans.TransSet.prototype.exportPack=function(stream) {
 	var dataList,hdrList;
 	var dataNum,dataCount;
 	var crc32;
+	/** @type {string} */
 	var data;
 	var version;
 	var len,total;
@@ -74,10 +78,11 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 	version=1;
 	crc32=new gis.enc.CRC32();
 
-	dataList=[];
-	hdrList=[];
+	dataList=/** @type {Array.<string>} */ ([]);
+	hdrList=/** @type {Array.<string>} */ ([]);
 
-	writeData=function(txt) {
+	/** @param {string} txt */
+	var writeData=function(txt) {
 		data+=txt;
 	};
 
@@ -96,7 +101,6 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 
 	this.stopSet.clearFollowers();
 //	this.lineSet.addFollowers();
-//	this.tripSet.addDurations();
 //	this.stopSet.calcStats();
 
 	data='';

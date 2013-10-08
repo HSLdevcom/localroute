@@ -23,8 +23,8 @@ goog.require('gis.io.Stream');
 
 /** @constructor
   * @extends {gis.io.Stream}
-  * @param {string} data
-  * @param {function(string)} write */
+  * @param {string|null} data
+  * @param {function(string)|null} write */
 gis.io.PackStream=function(data,write) {
 	//                  1         2         3         4         5         6          7         8         9
 	//        123 456789012345678901234567890123456789012345678901234567890 123456789012345678901234567890123456
@@ -47,11 +47,11 @@ gis.io.PackStream=function(data,write) {
 	/** @type {number} */
 	this.extra=tbl.length-64;
 
-	/** @type {string} */
+	/** @type {string|null} */
 	this.data=data;
 	/** @type {number} */
 	this.len=data?data.length:0;
-	/** @type {function(string)} */
+	/** @type {function(string)|null} */
 	this.write=write;
 };
 

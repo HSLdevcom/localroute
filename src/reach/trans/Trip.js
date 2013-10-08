@@ -51,7 +51,8 @@ reach.trans.Trip.Mode={
 	FUNICULAR:7
 };
 
-/** @param {number} stopNum */
+/** @param {number} stopNum
+  * @return {number} */
 reach.trans.Trip.prototype.getArrival=function(stopNum) {
 	var timeList;
 	var arrival;

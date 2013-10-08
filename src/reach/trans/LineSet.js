@@ -71,13 +71,14 @@ reach.trans.LineSet.prototype.exportTempPack=function(write) {
 	}
 };
 
-/** @param {gis.io.PackStream} stream
+/** @param {gis.io.LineStream} stream
   * @param {reach.trans.StopSet} stopSet */
 reach.trans.LineSet.prototype.importTempPack=function(stream,stopSet) {
 	var txt;
 	var lineList;
 	var lineNum,lineCount;
 	var line;
+	var fieldList;
 	var stopList;
 	var stopNum,stopCount;
 	var stop;
@@ -109,60 +110,6 @@ reach.trans.LineSet.prototype.importTempPack=function(stream,stopSet) {
 	this.list=lineList;
 };
 
-reach.trans.LineSet.prototype.addFollowers=function() {
-	var lineList;
-	var lineNum,lineCount;
-	var line;
-	var stopList;
-	var stopNum,stopCount;
-	var stop,prevStop;
-	var followerList;
-	var followerNum;
-
-	lineList=this.list;
-	lineCount=this.count;
-
-	for(lineNum=0;lineNum<lineCount;lineNum++) {
-		line=lineList[lineNum];
-
-		followerList=[];
-		stopList=line.stopList;
-		stop=stopList[0];
-
-		stopCount=stopList.length;
-		for(stopNum=1;stopNum<stopCount;stopNum++) {
-			prevStop=stop;
-			stop=stopList[stopNum];
-			followerNum=prevStop.followerTbl[stop.id];
-
-			if(!followerNum && followerNum!==0) {
-				followerNum=prevStop.followerCount++;
-				prevStop.followerTbl[stop.id]=followerNum;
-//				prevStop.followerList[followerNum]=stop;
-				prevStop.durationsTo[followerNum]=[];
-			}
-
-			followerList[stopNum-1]=followerNum;
-		}
-
-		line.followerList=followerList;
-	}
-};
-
-/*
-reach.trans.LineSet.prototype.calcStats=function() {
-	var lineList;
-	var lineNum,lineCount;
-
-	lineList=this.list;
-	lineCount=this.count;
-
-	for(lineNum=0;lineNum<lineCount;lineNum++) {
-		lineList[lineNum].calcStats();
-	}
-};
-*/
-
 reach.trans.LineSet.prototype.clearTrips=function() {
 	var lineList;
 	var lineNum,lineCount;
@@ -179,6 +126,8 @@ reach.trans.LineSet.prototype.sortTrips=function() {
 	var lineList;
 	var lineNum,lineCount;
 
+	/** @param {reach.trans.Trip} a
+	  * @param {reach.trans.Trip} b */
 	function compareTrips(a,b) {
 		return(a.startTime-b.startTime);
 	}
@@ -259,8 +208,10 @@ reach.trans.LineSet.prototype.importPack=function(stream,stopSet) {
 	var stopNum,stopCount;
 	var stop,prevStop;
 	var id;
-	var j,maxRep;
+	/** @type {number} */
+	var maxRep;
 	var followerCount;
+	/** @type {Array.<number>} */
 	var dec;
 	var step;
 
@@ -273,7 +224,7 @@ reach.trans.LineSet.prototype.importPack=function(stream,stopSet) {
 				maxRep=self.maxRep;
 				self.list=[];
 
-				dec=[];
+				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
 				lineCount=dec[0];
 
@@ -281,7 +232,7 @@ reach.trans.LineSet.prototype.importPack=function(stream,stopSet) {
 
 			// Iterate to load info for each line such as list of stops.
 			case 1:
-				line=new reach.trans.Line(self);
+				line=new reach.trans.Line();
 
 				stream.readShort(dec,2);
 				stopCount=dec[0];
@@ -342,7 +293,8 @@ reach.trans.LineSet.prototype.importPack=function(stream,stopSet) {
 };
 
 /** @param {Array.<reach.trans.Line>} lineList
-  * @param {function(reach.trans.Trip):boolean} handler */
+  * @param {function(reach.trans.Trip):boolean} handler
+  * @return {Array.<reach.trans.Line>} */
 reach.trans.LineSet.prototype.filterTrips=function(lineList,handler) {
 	var outList;
 	var lineNum,lineCount;
@@ -371,7 +323,8 @@ reach.trans.LineSet.prototype.filterTrips=function(lineList,handler) {
 };
 
 /** @param {Array.<reach.trans.Line>} lineList
-  * @param {function(reach.trans.Stop):boolean} handler */
+  * @param {function(reach.trans.Stop):boolean} handler
+  * @return {Array.<reach.trans.Line>} */
 reach.trans.LineSet.prototype.filterStops=function(lineList,handler) {
 	var outList;
 	var lineNum,lineCount;
@@ -404,14 +357,22 @@ reach.trans.LineSet.prototype.filterStops=function(lineList,handler) {
   * @return {Array.<reach.trans.Line>} */
 reach.trans.LineSet.prototype.find=function(term) {
 	var lineList;
-	var name,code;
-	var nameRe,codeRe;
+	/** @type {string} */
+	var name;
+	/** @type {string} */
+	var code;
+	/** @type {RegExp} */
+	var nameRe;
+	/** @type {RegExp} */
+	var codeRe;
+	/** @type {Object.<number,boolean>} */
+	var stopTbl;
 	var stopList;
 	var stopNum,stopCount;
 
 	lineList=this.list;
-	name=term['name'];
-	code=term['code'];
+	name=/** @type {string} */ (term['name']);
+	code=/** @type {string} */ (term['code']);
 	if(name || code) {
 		if(name) nameRe=new RegExp('^'+name,'i');
 		if(code) codeRe=new RegExp('^'+code+'([^0-9]|$)','i');
@@ -421,7 +382,7 @@ reach.trans.LineSet.prototype.find=function(term) {
 			return(true);
 		});
 	}
-	stopList=term['stops'];
+	stopList=/** @type {Array.<reach.trans.Stop>} */ (term['stops']);
 	if(stopList) {
 		stopTbl={};
 		stopCount=stopList.length;
@@ -436,80 +397,3 @@ reach.trans.LineSet.prototype.find=function(term) {
 
 	return(lineList);
 };
-
-/*
-reach.trans.LineSet.prototype.sortTrips=function() {
-    var lineNum;
-    var line;
-    var tripListList;
-	var tripNum;
-*/
-
-	/** @param {reach.trans.Trip} a
-	  * @param {reach.trans.Trip} b
-	  * @return {number} */
-/*
-	function compareTrips(a,b) {
-		return(a.startTime-b.startTime);
-	}
-
-	for(lineNum=this.list.length;lineNum--;) {
-		line=this.city.lineSet.list[lineNum];
-		tripListList=[];
-		for(var validNum in line.tripListTbl) {
-			if(this.validAccept[validNum] && line.tripListTbl.hasOwnProperty(validNum)) {
-				tripListList.push(line.tripListTbl[+validNum]);
-			}
-		}
-
-		// Concatenate together all trip lists from different valid day groups.
-		line.tripList=line.tripList.concat.apply(line.tripList,tripListList);
-
-		line.tripList.sort(compareTrips);
-
-		for(tripNum=line.tripList.length;tripNum--;) {
-			line.tripList[tripNum].num=tripNum;
-		}
-	}
-};
-
-reach.trans.LineSet.prototype.calcNiceness=function(startTime,niceDepartureSpan) {
-	var lineNum,lineCount;
-	var line;
-	var trip;
-	var stopList;
-	var stopNum,stopCount;
-	var stop;
-	var lastTime;
-	var i,l;
-
-	stopList=this.city.stopSet.list;
-	stopCount=stopList.length;
-	for(stopNum=0;stopNum<stopCount;stopNum++) {
-		stop=stopList[stopNum];
-		stop.departureCount=0;
-	}
-
-	lineCount=this.list.length;
-	for(lineNum=0;lineNum<lineCount;lineNum++) {
-		line=this.list[lineNum];
-
-		// Find departures within an hour after search start time.
-		lastTime=startTime+niceDepartureSpan;
-		l=line.tripList.length;
-
-		line.departureCount=0;
-		for(i=line.findDeparture(startTime);i<l;i++) {
-			trip=line.tripList[i];
-			if(trip.startTime>lastTime) break;
-			line.departureCount++;
-		}
-
-		stopCount=line.stopList.length;
-		for(stopNum=0;stopNum<stopCount;stopNum++) {
-			stop=line.stopList[stopNum];
-			stop.departureCount+=line.departureCount;
-		}
-	}
-};
-*/

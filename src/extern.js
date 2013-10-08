@@ -46,7 +46,7 @@ function Buffer() {}
   * @return {boolean} */
 Buffer.isBuffer=function(buf) {};
 
-/** @param {string} enc
+/** @param {string=} enc
   * @return {string} */
 Buffer.prototype.toString=function(enc) {};
 
@@ -111,7 +111,7 @@ var fs={
 	readFile:function(path,enc,handler) {},
 	/** @param {string} path
 	  * @param {string=} enc
-	  * @return {NodeBuffer} */
+	  * @return {NodeBuffer|string} */
 	readFileSync:function(path,enc) {},
 	/** @param {string} path
 	  * @param {string} mode
@@ -449,7 +449,7 @@ WorkerEvent.prototype.data;
   * @param {string} path */
 var WWorker=function(path) {};
 
-/** @param {WorkerEvent} evt */
+/** @param {MessageEvent|WorkerEvent} evt */
 WWorker.prototype.onmessage=function(evt) {};
 
 /** @param {*} msg */

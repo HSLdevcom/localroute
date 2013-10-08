@@ -38,6 +38,7 @@ reach.trans.StopSet.prototype.insert=function(stop) {
 	return(stop);
 };
 
+/** @param {function(string)} write */
 reach.trans.StopSet.prototype.exportTempPack=function(write) {
 	var stopList;
 	var stopNum,stopCount;
@@ -53,11 +54,13 @@ reach.trans.StopSet.prototype.exportTempPack=function(write) {
 	}
 };
 
+/** @param {gis.io.LineStream} stream */
 reach.trans.StopSet.prototype.importTempPack=function(stream) {
 	var txt;
 	var stopList;
 	var stopNum,stopCount;
 	var stop;
+	var fieldList;
 	var ll;
 
 	txt=stream.readLine();
@@ -177,6 +180,7 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	var stopNum;
 	var stopCount;
 	var nameList;
+	/** @type {Array.<number>} */
 	var dec;
 	var step;
 
@@ -190,9 +194,8 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 				step++;
 
 				self.list=[];
-//				self.tbl={};
 
-				dec=[];
+				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
 				stopCount=dec[0];
 				stopNum=0;
@@ -227,7 +230,8 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList
-  * @param {function(reach.trans.Stop):boolean} handler */
+  * @param {function(reach.trans.Stop):boolean} handler
+  * @return {Array.<reach.trans.Stop>} */
 reach.trans.StopSet.prototype.filter=function(stopList,handler) {
 	var outList;
 	var stopNum,stopCount;
@@ -245,7 +249,8 @@ reach.trans.StopSet.prototype.filter=function(stopList,handler) {
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList
-  * @param {function(reach.trans.Line):boolean} handler */
+  * @param {function(reach.trans.Line):boolean} handler
+  * @return {Array.<reach.trans.Stop>} */
 reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
 	var outList;
 	var stopNum,stopCount;
@@ -278,21 +283,23 @@ reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
 reach.trans.StopSet.prototype.find=function(term) {
 	var stopList;
 	var name;
+	/** @type {RegExp} */
 	var nameRe;
+	/** @type {Object.<number,boolean>} */
 	var lineTbl;
 	var lineList;
 	var lineNum,lineCount;
 
 	stopList=this.list;
-	name=term['name'];
+	name=/** @type {string} */ (term['name']);
 	if(name) {
 		nameRe=new RegExp('^'+name,'i');
 		stopList=this.filter(stopList,function(stop) {
-			return(stop.name && nameRe.test(stop.name));
+			return(!!stop.name && nameRe.test(stop.name));
 		});
 	}
 
-	lineList=term['lines'];
+	lineList=/** @type {Array.<reach.trans.Line>} */ (term['lines']);
 	if(lineList) {
 		lineTbl={};
 		lineCount=lineList.length;

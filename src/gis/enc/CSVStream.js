@@ -156,3 +156,6 @@ gis.enc.CSVStream.prototype['_flush']=function(done) {
 
 	done();
 };
+
+/** @type {function(string,function(Array.<string>))} */
+gis.enc.CSVStream.prototype.on;

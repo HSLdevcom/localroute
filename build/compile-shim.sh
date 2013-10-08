@@ -15,7 +15,7 @@ xargs java -jar ../bin/compiler.jar \
 --js_output_file ../dist/$BASE.js \
 --externs ../src/extern.js \
 --manage_closure_dependencies true \
-#--formatting PRETTY_PRINT --debug \
 2>report.txt
+#--formatting PRETTY_PRINT --debug \
 
 cat report.txt
