@@ -303,8 +303,8 @@ reach.trans.StopSet.prototype.find=function(term) {
 	if(lineList) {
 		lineTbl={};
 		lineCount=lineList.length;
-		for(lineNum=0;stopNum<stopCount;stopNum++) {
-			lineTbl[stopList[stopNum].id]=true;
+		for(lineNum=0;lineNum<lineCount;lineNum++) {
+			lineTbl[lineList[lineNum].id]=true;
 		}
 
 		stopList=this.filterLines(stopList,function(line) {
