@@ -1,11 +1,11 @@
-# LocalRoute.js
+# localroute.js
 
 API uses two global objects, "gis" and "reach". Gis has some general-purpose
 functions, reach is related to public transit. The main class to access data
 is reach.trans.TransSet. It has members stopSet, lineSet and tripSet for all
 public transit stops, lines and departures.
 
-In LocalTrans terminology a trip represents a single time that a vehicle goes
+In localroute.js terminology a trip represents a single time that a vehicle goes
 from the first to the last stop of its route in one direction. Therefore a
 trip contains a single arrival for all stops along the route. All information
 the public uses to identify the route is connected to every trip.
