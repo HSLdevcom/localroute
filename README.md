@@ -4,7 +4,7 @@ localroute.js calculates public transport itineraries on mobile devices,
 even when offline. To make it feasible,
 [GTFS](https://developers.google.com/transit/gtfs/) timetables are
 preprocessed and compressed into a custom format. These comparatively tiny
-files are delivered to the client and uncompressed before use.
+files are delivered to the client and decompressed before use.
 
 localroute.js enables the users to avoid extortionate data roaming prices
 while abroad or to maintain their travelling privacy.
