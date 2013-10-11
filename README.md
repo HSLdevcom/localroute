@@ -1,5 +1,16 @@
 # localroute.js
 
+localroute.js calculates public transport itineraries on mobile devices,
+even when offline. To make it feasible,
+[GTFS](https://developers.google.com/transit/gtfs/) timetables are
+preprocessed and compressed into a custom format. These comparatively tiny
+files are delivered to the client and uncompressed before use.
+
+localroute.js enables the users to avoid extortionate data roaming prices
+while abroad or to maintain their travelling privacy.
+
+## Library structure
+
 API uses two global objects, "gis" and "reach". Gis has some general-purpose
 functions, reach is related to public transit. The main class to access data
 is reach.trans.TransSet. It has members stopSet, lineSet and tripSet for all
