@@ -43,6 +43,12 @@ gis.MU.major=6378137;
 gis.MU.minor=gis.MU.major*(1-gis.MU.flatten);
 /** @type {number} Min/max latitude for square-shaped Mercator projection. */
 gis.MU.degLatRange=85.05112877980659;
+/** @type {Array.<number>} Table for finding rightmost set bit by de Bruijn multiplication.
+  * From Bit Twiddling Hacks by Sean Eron Anderson. */
+gis.MU.bsr=[
+     0,  1, 28,  2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17,  4, 8,
+    31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18,  6, 11,  5, 10, 9
+];
 
 /** @return {string} */
 gis.MU.prototype.toString=function() {
@@ -134,4 +140,37 @@ gis.MU.prototype.distTo=function(ll) {
 	east=(ll.llon-this.llon)*scale;
 
 	return(Math.sqrt(north*north+east*east));
+};
+
+/** Pack coordinate pair into an IEEE 754 double precision number, like this:
+  * seeeeeee eeeeaaaa aaaaaaaa aaaaaaaa aaaooooo oooooooo oooooooo ooooooo1
+  * 28 o's are longitude bits, 23 a's are latitude bits, 11 e's the exponent.
+  * One more bit of latitude is implicitly encoded into e by normalization,
+  * 4 more bits explicitly by multiplying the entire number by a power of 2.
+  * Note that coordinates are rounded to 28 bits!
+  * @return {number} */
+gis.MU.prototype.toNum=function() {
+	var lat;
+
+	lat=(this.llat+2)>>2;
+
+	return( ( ((lat&0xffffff)*(1<<28)+((this.llon+2)>>2))*2+1 ) * ((1<<(lat>>24))>>>0) );
+};
+
+/** Unpack coordinate pair from an IEEE 754 double precision number.
+  * @param {number} n
+  * @return {gis.MU} */
+gis.MU.fromNum=function(n) {
+    var e;
+
+	// Rightmost bit of mantissa is 1, some latitude bits are encoded into the
+	// exponent causing the rightmost bit to shift left after converting to int.
+	e=gis.MU.bsr[(((n&-n)>>>0)*0x077cb531)>>>27];
+	// Divide by exponent offset to get all 53 bits of mantissa.
+	n/=((1<<e)>>>0)*2;
+
+	return(new gis.MU(
+		((n/(1<<28))|(e<<24))<<2,
+		(n&((1<<28)-1))<<2
+	));
 };
