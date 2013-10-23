@@ -31,6 +31,9 @@ gis.MU=function(lat,lon) {
 	this.llon=lon;
 };
 
+/** @type {gis.MU} Used to avoid creating new objects for temporary use. */
+gis.MU.ll=new gis.MU();
+
 /** @type {number} Number of bits to use for coordinates. */
 gis.MU.bits=30;
 /** @type {number} Maximum Map Unit coordinate value. */
@@ -112,7 +115,6 @@ gis.MU.getScale=function(lat) {
   * @param {gis.MU} ll
   * @return {number} Distance. Unit: meters. */
 gis.MU.prototype.distTo=function(ll) {
-/*
 	var f,t;
 	var scale;
 	var north,east;
@@ -130,14 +132,6 @@ gis.MU.prototype.distTo=function(ll) {
 	// Calculate displacement in meters in rectangular coordinates.
 	north=(ll.llat-this.llat)*(1+( t*3-f )/2)/scale;
 	east=(ll.llon-this.llon)*(1+( t+f )/2)/scale;
-*/
-
-	var scale;
-	var north,east;
-
-	scale=gis.MU.getScale((this.llat+ll.llat)/2);
-	north=(ll.llat-this.llat)*scale;
-	east=(ll.llon-this.llon)*scale;
 
 	return(Math.sqrt(north*north+east*east));
 };
@@ -158,9 +152,8 @@ gis.MU.prototype.toNum=function() {
 };
 
 /** Unpack coordinate pair from an IEEE 754 double precision number.
-  * @param {number} n
-  * @return {gis.MU} */
-gis.MU.fromNum=function(n) {
+  * @param {number} n */
+gis.MU.prototype.fromNum=function(n) {
     var e;
 
 	// Rightmost bit of mantissa is 1, some latitude bits are encoded into the
@@ -169,8 +162,17 @@ gis.MU.fromNum=function(n) {
 	// Divide by exponent offset to get all 53 bits of mantissa.
 	n/=((1<<e)>>>0)*2;
 
-	return(new gis.MU(
-		((n/(1<<28))|(e<<24))<<2,
-		(n&((1<<28)-1))<<2
-	));
+	this.llat=((n/(1<<28))|(e<<24))<<2;
+	this.llon=(n&((1<<28)-1))<<2;
+
+	return(this);
+};
+
+/** @param {number} n
+  * @return {gis.MU} */
+gis.MU.fromNum=function(n) {
+	var ll;
+
+	ll=new gis.MU(0,0);
+	return(ll.fromNum(n));
 };
