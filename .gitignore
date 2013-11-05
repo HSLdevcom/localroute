@@ -1,1 +1,4 @@
 build/report.txt
+bin/*
+!bin/COPYING
+!bin/assemble.sh
