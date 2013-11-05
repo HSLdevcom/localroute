@@ -19,7 +19,7 @@
 
 goog.provide('reach.trans.TransSet');
 goog.require('reach.trans.StopSet');
-goog.require('reach.trans.LineSet');
+goog.require('reach.trans.SeqSet');
 goog.require('reach.trans.KeySet');
 goog.require('reach.trans.TripSet');
 goog.require('gis.io.LineStream');
@@ -35,8 +35,8 @@ reach.trans.TransSet=function(date) {
 	this.nameSet=new gis.enc.NameSet();
 	/** @type {reach.trans.StopSet} */
 	this.stopSet=new reach.trans.StopSet();
-	/** @type {reach.trans.LineSet} */
-	this.lineSet=new reach.trans.LineSet();
+	/** @type {reach.trans.SeqSet} */
+	this.seqSet=new reach.trans.SeqSet();
 	/** @type {reach.trans.KeySet} */
 	this.keySet=new reach.trans.KeySet();
 	/** @type {reach.trans.TripSet} */
@@ -47,7 +47,7 @@ reach.trans.TransSet=function(date) {
 reach.trans.TransSet.prototype.exportTempPack=function(write) {
 	write(this.date.jd+'\n');
 	this.stopSet.exportTempPack(write);
-	this.lineSet.exportTempPack(write);
+	this.seqSet.exportTempPack(write);
 	this.keySet.exportTempPack(write);
 	this.tripSet.groupTrips();
 	this.tripSet.exportTempPack(write);
@@ -60,8 +60,8 @@ reach.trans.TransSet.prototype.importTempPack=function(data) {
 	stream=new gis.io.LineStream(data,null);
 	this.date=new gis.util.Date(+stream.readLine());
 	this.stopSet.importTempPack(stream);
-	this.lineSet.importTempPack(stream,this.stopSet);
-	this.keySet.importTempPack(stream,this.lineSet);
+	this.seqSet.importTempPack(stream,this.stopSet);
+	this.keySet.importTempPack(stream,this.seqSet);
 	this.tripSet.importTempPack(stream,this.keySet);
 };
 
@@ -100,11 +100,11 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 	dataList.push(data);
 
 	this.stopSet.clearFollowers();
-//	this.lineSet.addFollowers();
+//	this.seqSet.addFollowers();
 //	this.stopSet.calcStats();
 
 	data='';
-	this.lineSet.exportPack(new gis.io.PackStream(null,writeData));
+	this.seqSet.exportPack(new gis.io.PackStream(null,writeData));
 //	data=new gis.enc.LZ().compressBytes(data,256,2048,new gis.io.PackStream(null,writeData));
 	dataList.push(data);
 
@@ -113,7 +113,7 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 	dataList.push(data);
 
 	this.tripSet.groupTrips();
-//	this.lineSet.calcStats();
+//	this.seqSet.calcStats();
 
 	data='';
 	this.tripSet.exportPack(new gis.io.PackStream(null,writeData));
@@ -157,10 +157,10 @@ reach.trans.TransSet.prototype.importPack=function(stream) {
 	gis.Q.busy(this.stopSet.importPack(stream,this.nameSet));
 
 	stream.readLong(dec,2);
-	gis.Q.busy(this.lineSet.importPack(stream,this.stopSet));
+	gis.Q.busy(this.seqSet.importPack(stream,this.stopSet));
 
 	stream.readLong(dec,2);
-	gis.Q.busy(this.keySet.importPack(stream,this.lineSet,this.nameSet));
+	gis.Q.busy(this.keySet.importPack(stream,this.seqSet,this.nameSet));
 
 	stream.readLong(dec,2);
 	gis.Q.busy(this.tripSet.importPack(stream,this.keySet));
@@ -182,7 +182,7 @@ reach.trans.TransSet.prototype.prepareDay=function(date) {
 
 	mask=1<<(date.jd-this.date.jd);
 
-	this.lineSet.clearTrips();
-	this.tripSet.bindLines(mask);
-	this.lineSet.sortTrips();
+	this.seqSet.clearTrips();
+	this.tripSet.bindSeqs(mask);
+	this.seqSet.sortTrips();
 };

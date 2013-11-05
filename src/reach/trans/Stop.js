@@ -35,9 +35,9 @@ reach.trans.Stop=function(origId,name,ll) {
 	this.ll=ll;
 
 	// Links connecting stop to transit network.
-	/** @type {Array.<reach.trans.Line>} Transit lines passing by this stop. */
-	this.lineList=[];
-	/** @type {Array.<number>} How many stops are passed along each transit line before reaching this stop. */
+	/** @type {Array.<reach.trans.Seq>} Transit stop sequences passing by this stop. */
+	this.seqList=[];
+	/** @type {Array.<number>} How many stops are passed along each stop sequence before reaching this stop. */
 	this.posList=[];
 
     /** @type {Object.<reach.trans.Trip.Mode,boolean>} */
@@ -72,9 +72,9 @@ reach.trans.Stop=function(origId,name,ll) {
 
 /** @return {Array.<{time:number,trip:reach.trans.Trip}>} */
 reach.trans.Stop.prototype.getArrivals=function() {
-	var lineList;
-	var lineNum,lineCount;
-	var line;
+	var seqList;
+	var seqNum,seqCount;
+	var seq;
 	var posList;
 	var pos;
 	var tripList;
@@ -85,13 +85,13 @@ reach.trans.Stop.prototype.getArrivals=function() {
 	outList=/** @type {Array.<{time:number,trip:reach.trans.Trip}>} */ ([]);
 	posList=this.posList;
 
-	lineList=this.lineList;
-	lineCount=lineList.length;
-	for(lineNum=0;lineNum<lineCount;lineNum++) {
-		line=lineList[lineNum];
-		pos=posList[lineNum];
+	seqList=this.seqList;
+	seqCount=seqList.length;
+	for(seqNum=0;seqNum<seqCount;seqNum++) {
+		seq=seqList[seqNum];
+		pos=posList[seqNum];
 
-		tripList=line.tripList;
+		tripList=seq.tripList;
 		tripCount=tripList.length;
 		for(tripNum=0;tripNum<tripCount;tripNum++) {
 			trip=tripList[tripNum];

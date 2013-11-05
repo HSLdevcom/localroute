@@ -23,10 +23,9 @@ goog.provide('reach.trans.GTFS');
 goog.require('gis.Obj');
 goog.require('gis.MU');
 goog.require('gis.util.Date');
-goog.require('gis.io.LineStream');
 goog.require('gis.enc.CSVStream');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.Line');
+goog.require('reach.trans.Seq');
 goog.require('reach.trans.Trip');
 
 /** @constructor
@@ -46,8 +45,8 @@ reach.trans.GTFS=function(transSet) {
 	this.tripTbl={};
 	/** @type {number} */
 	this.tripCount=0;
-	/** @type {Object.<string,reach.trans.Line>} */
-	this.lineTbl={};
+	/** @type {Object.<string,reach.trans.Seq>} */
+	this.seqTbl={};
 	/** @type {Object.<string,reach.trans.Key>} */
 	this.keyTbl={};
 };
@@ -407,9 +406,9 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var stopTbl;
 	var stopList;
 	var stopNum,stopCount;
-	var lineSet;
-	var lineTbl;
-	var line;
+	var seqSet;
+	var seqTbl;
+	var seq;
 	var keySet;
 	var keyTbl;
 	var keyObj;
@@ -421,11 +420,11 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var trip;
 	var arrive,depart;
 
-	lineSet=this.transSet.lineSet;
+	seqSet=this.transSet.seqSet;
 	keySet=this.transSet.keySet;
 	tripSet=this.transSet.tripSet;
 
-	lineTbl=this.lineTbl;
+	seqTbl=this.seqTbl;
 	stopTbl=this.stopTbl;
 	keyTbl=this.keyTbl;
 	routeTbl=this.routeTbl;
@@ -456,24 +455,24 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	}
 
 	key=refList.join('\t');
-	line=lineTbl[key];
-	if(!line) {
+	seq=seqTbl[key];
+	if(!seq) {
 		stopList=[];
 		for(stopNum=0;stopNum<stopCount;stopNum++) {
 			stopList[stopNum]=stopTbl[refList[stopNum]];
 		}
 
-		line=new reach.trans.Line();
-		line.stopList=stopList;
+		seq=new reach.trans.Seq();
+		seq.stopList=stopList;
 
-		lineTbl[key]=line;
-		lineSet.insert(line);
+		seqTbl[key]=seq;
+		seqSet.insert(seq);
 	}
 
-	key=line.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
+	key=seq.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
 	keyObj=keyTbl[key];
 	if(!keyObj) {
-		keyObj=new reach.trans.Key(line);
+		keyObj=new reach.trans.Key(seq);
 
 		route=routeTbl[tripDesc.route];
 		keyObj.mode=route.mode;

@@ -17,13 +17,13 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('reach.trans.Line');
+goog.provide('reach.trans.Seq');
 goog.require('reach.trans.Stop');
 //goog.require('reach.trans.Trip');
 //goog.require('reach.util');
 
 /** @constructor */
-reach.trans.Line=function() {
+reach.trans.Seq=function() {
 	/** @type {number} */
 	this.id=0;
 

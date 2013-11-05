@@ -249,14 +249,14 @@ reach.trans.StopSet.prototype.filter=function(stopList,handler) {
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList
-  * @param {function(reach.trans.Line):boolean} handler
+  * @param {function(reach.trans.Seq):boolean} handler
   * @return {Array.<reach.trans.Stop>} */
-reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
+reach.trans.StopSet.prototype.filterSeqs=function(stopList,handler) {
 	var outList;
 	var stopNum,stopCount;
 	var stop;
-	var lineList;
-	var lineNum,lineCount;
+	var seqList;
+	var seqNum,seqCount;
 
 	outList=[];
 
@@ -264,11 +264,11 @@ reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
 	for(stopNum=0;stopNum<stopCount;stopNum++) {
 		stop=stopList[stopNum];
 
-		lineList=stop.lineList;
-		lineCount=lineList.length;
+		seqList=stop.seqList;
+		seqCount=seqList.length;
 
-		for(lineNum=0;lineNum<lineCount;lineNum++) {
-			if(handler(lineList[lineNum])) {
+		for(seqNum=0;seqNum<seqCount;seqNum++) {
+			if(handler(seqList[seqNum])) {
 				outList.push(stop);
 				break;
 			}
@@ -286,9 +286,9 @@ reach.trans.StopSet.prototype.find=function(term) {
 	/** @type {RegExp} */
 	var nameRe;
 	/** @type {Object.<number,boolean>} */
-	var lineTbl;
-	var lineList;
-	var lineNum,lineCount;
+	var seqTbl;
+	var seqList;
+	var seqNum,seqCount;
 
 	stopList=this.list;
 	name=/** @type {string} */ (term['name']);
@@ -299,16 +299,16 @@ reach.trans.StopSet.prototype.find=function(term) {
 		});
 	}
 
-	lineList=/** @type {Array.<reach.trans.Line>} */ (term['lines']);
-	if(lineList) {
-		lineTbl={};
-		lineCount=lineList.length;
-		for(lineNum=0;lineNum<lineCount;lineNum++) {
-			lineTbl[lineList[lineNum].id]=true;
+	seqList=/** @type {Array.<reach.trans.Seq>} */ (term['lines']);
+	if(seqList) {
+		seqTbl={};
+		seqCount=seqList.length;
+		for(seqNum=0;seqNum<seqCount;seqNum++) {
+			seqTbl[seqList[seqNum].id]=true;
 		}
 
-		stopList=this.filterLines(stopList,function(line) {
-			return(lineTbl[line.id]||false);
+		stopList=this.filterSeqs(stopList,function(seq) {
+			return(seqTbl[seq.id]||false);
 		});
 	}
 

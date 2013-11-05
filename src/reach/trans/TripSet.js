@@ -364,7 +364,7 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 
 				for(;tripNum<tripLast;tripNum++) {
 					trip=self.list[tripNum];
-					timeCount=trip.key.line.stopList.length-1;
+					timeCount=trip.key.seq.stopList.length-1;
 					pack.readShort(dec,timeCount);
 
 					for(timeNum=0;timeNum<timeCount;timeNum++) {
@@ -383,15 +383,16 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 	return(advance);
 };
 
-/** @param {number} mask */
-reach.trans.TripSet.prototype.bindLines=function(mask) {
+/** Add trips to their respective stop sequences.
+  * @param {number} mask */
+reach.trans.TripSet.prototype.bindSeqs=function(mask) {
 	var validList;
 	var validGroupList;
 	var validNum,validCount;
 	var tripList;
 	var tripNum,tripCount;
 	var trip;
-	var line;
+	var seq;
 
 	validGroupList=this.validGroupList;
 	validList=this.validList;
@@ -405,9 +406,9 @@ reach.trans.TripSet.prototype.bindLines=function(mask) {
 
 		for(tripNum=0;tripNum<tripCount;tripNum++) {
 			trip=tripList[tripNum];
-			line=trip.key.line;
+			seq=trip.key.seq;
 
-			line.tripList.push(trip);
+			seq.tripList.push(trip);
 		}
 	}
 };
