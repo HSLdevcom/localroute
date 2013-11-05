@@ -18,12 +18,12 @@
 */
 
 goog.provide('reach.trans.TransSet');
-goog.require('reach.trans.NameSet');
 goog.require('reach.trans.StopSet');
 goog.require('reach.trans.LineSet');
 goog.require('reach.trans.KeySet');
 goog.require('reach.trans.TripSet');
 goog.require('gis.io.LineStream');
+goog.require('gis.enc.NameSet');
 goog.require('gis.enc.CRC32');
 
 /** @constructor
@@ -31,8 +31,8 @@ goog.require('gis.enc.CRC32');
 reach.trans.TransSet=function(date) {
 	/** @type {gis.util.Date} */
 	this.date=date||null;
-	/** @type {reach.trans.NameSet} */
-	this.nameSet=new reach.trans.NameSet();
+	/** @type {gis.enc.NameSet} */
+	this.nameSet=new gis.enc.NameSet();
 	/** @type {reach.trans.StopSet} */
 	this.stopSet=new reach.trans.StopSet();
 	/** @type {reach.trans.LineSet} */

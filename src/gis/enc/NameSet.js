@@ -1,27 +1,23 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Copyright (C) 2012, 2013 BusFaster Oy
+	Written in 2012, 2013 by Juha Järvi
 
-	LocalRoute.js is free software: you can redistribute it and/or modify it
-	under the terms of the GNU Lesser General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	To the extent possible under law, the author(s) have dedicated all
+	copyright and related and neighboring rights to this software to the
+	public domain worldwide. This software is distributed without any
+	warranty.
 
-	LocalRoute.js is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public License
-	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the CC0 Public Domain Dedication
+	along with this software. If not, see
+	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
-goog.provide('reach.trans.NameSet');
+goog.provide('gis.enc.NameSet');
 goog.require('gis.enc.LZ');
 
 /** @constructor */
-reach.trans.NameSet=function() {
+gis.enc.NameSet=function() {
 	/** @type {Object.<string,number>} */
 	this.tbl={};
 	/** @type {Array.<string>} */
@@ -31,7 +27,7 @@ reach.trans.NameSet=function() {
 };
 
 /** @param {string} txt */
-reach.trans.NameSet.prototype.insert=function(txt) {
+gis.enc.NameSet.prototype.insert=function(txt) {
 	var num;
 
 	num=this.tbl[txt];
@@ -42,7 +38,7 @@ reach.trans.NameSet.prototype.insert=function(txt) {
 	}
 };
 
-reach.trans.NameSet.prototype.sortNames=function() {
+gis.enc.NameSet.prototype.sortNames=function() {
 	var nameTbl;
 	var nameList;
 	var nameNum,nameCount;
@@ -59,12 +55,12 @@ reach.trans.NameSet.prototype.sortNames=function() {
 
 /** @param {string} txt
   * @return {number} */
-reach.trans.NameSet.prototype.getId=function(txt) {
+gis.enc.NameSet.prototype.getId=function(txt) {
 	return(this.tbl[txt]);
 };
 
 /** @param {gis.io.PackStream} stream */
-reach.trans.NameSet.prototype.exportPack=function(stream) {
+gis.enc.NameSet.prototype.exportPack=function(stream) {
 	var txt;
 	var lz;
 
@@ -76,7 +72,7 @@ reach.trans.NameSet.prototype.exportPack=function(stream) {
 };
 
 /** @param {gis.io.PackStream} stream */
-reach.trans.NameSet.prototype.importPack=function(stream) {
+gis.enc.NameSet.prototype.importPack=function(stream) {
 	var txt;
 	var lz;
 

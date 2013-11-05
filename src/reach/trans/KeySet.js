@@ -19,7 +19,7 @@
 
 goog.provide('reach.trans.KeySet');
 goog.require('reach.trans.Key');
-goog.require('reach.trans.NameSet');
+goog.require('gis.enc.NameSet');
 goog.require('gis.io.PackStream');
 
 /** @constructor */
@@ -86,7 +86,7 @@ reach.trans.KeySet.prototype.importTempPack=function(stream,lineSet) {
 	this.list=keyList;
 };
 
-/** @param {reach.trans.NameSet} nameSet */
+/** @param {gis.enc.NameSet} nameSet */
 reach.trans.KeySet.prototype.getNames=function(nameSet) {
 	var keyList;
 	var keyNum,keyCount;
@@ -104,7 +104,7 @@ reach.trans.KeySet.prototype.getNames=function(nameSet) {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.NameSet} nameSet */
+  * @param {gis.enc.NameSet} nameSet */
 reach.trans.KeySet.prototype.exportPack=function(stream,nameSet) {
 	var keyList;
 	var keyNum,keyCount;
@@ -123,7 +123,7 @@ reach.trans.KeySet.prototype.exportPack=function(stream,nameSet) {
 
 /** @param {gis.io.PackStream} stream
   * @param {reach.trans.LineSet} lineSet
-  * @param {reach.trans.NameSet} nameSet
+  * @param {gis.enc.NameSet} nameSet
   * @return {function():number} */
 reach.trans.KeySet.prototype.importPack=function(stream,lineSet,nameSet) {
 	/** @type {reach.trans.KeySet} */

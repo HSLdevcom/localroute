@@ -19,7 +19,7 @@
 
 goog.provide('reach.trans.StopSet');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.NameSet');
+goog.require('gis.enc.NameSet');
 goog.require('gis.io.PackStream');
 
 /** @constructor */
@@ -82,7 +82,7 @@ reach.trans.StopSet.prototype.importTempPack=function(stream) {
 	this.list=stopList;
 };
 
-/** @param {reach.trans.NameSet} nameSet */
+/** @param {gis.enc.NameSet} nameSet */
 reach.trans.StopSet.prototype.getNames=function(nameSet) {
 	var stopList;
 	var stopNum,stopCount;
@@ -119,7 +119,7 @@ reach.trans.StopSet.prototype.clearFollowers=function() {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.NameSet} nameSet */
+  * @param {gis.enc.NameSet} nameSet */
 reach.trans.StopSet.prototype.exportPack=function(stream,nameSet) {
 	var stopList;
 	var stopNum,stopCount;
@@ -161,7 +161,7 @@ reach.trans.StopSet.prototype.exportPack=function(stream,nameSet) {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.NameSet} nameSet
+  * @param {gis.enc.NameSet} nameSet
   * @return {function():number} */
 reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	/** @type {reach.trans.StopSet} */
