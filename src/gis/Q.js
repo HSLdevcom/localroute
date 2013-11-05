@@ -155,3 +155,19 @@ gis.Q.zeroPad=function(n,width) {
 
 	return(new Array(width-n.length+1).join('0')+n);
 };
+
+/** Trim leading and trailing whitespace.
+  * Based on code by Steven Levithan at http://blog.stevenlevithan.com/archives/faster-trim-javascript
+  * @param {string} txt
+  * @return {string} */
+gis.Q.trim=function(txt) {
+	var pos;
+	var re;
+
+	txt=txt.replace(/^\s\s*/,'');
+	pos=txt.length;
+	re=/\s/;
+
+	while(re.test(txt.charAt(--pos))) {}
+	return(txt.substr(0,pos+1));
+}

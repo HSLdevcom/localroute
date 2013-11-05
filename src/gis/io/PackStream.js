@@ -121,6 +121,7 @@ gis.io.PackStream.prototype.encodeShort=function(data) {
 
 	while(len--) {
 		x=data[len];
+		// if(x<0) {console.trace('Negative number to encode!');throw('Negative number to encode!');}
 		result=enc[x&63]+result;
 		x>>=6;
 
@@ -159,6 +160,7 @@ gis.io.PackStream.prototype.encodeLong=function(data) {
 
 	while(len--) {
 		x=data[len];
+		// if(x<0) {console.trace('Negative number to encode!');throw('Negative number to encode!');}
 		c=x%extra;
 		x=(x-c)/extra;
 		result=enc[c+64]+result;

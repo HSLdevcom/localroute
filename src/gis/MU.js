@@ -32,7 +32,7 @@ gis.MU=function(lat,lon) {
 };
 
 /** @type {gis.MU} Used to avoid creating new objects for temporary use. */
-gis.MU.ll=new gis.MU();
+gis.MU.ll=new gis.MU(0,0);
 
 /** @type {number} Number of bits to use for coordinates. */
 gis.MU.bits=30;
@@ -142,17 +142,27 @@ gis.MU.prototype.distTo=function(ll) {
   * One more bit of latitude is implicitly encoded into e by normalization,
   * 4 more bits explicitly by multiplying the entire number by a power of 2.
   * Note that coordinates are rounded to 28 bits!
+  * @param {number} lat
+  * @param {number} lon
   * @return {number} */
+gis.MU.toNum=function(lat,lon) {
+	lat=(lat+2)>>2;
+	lon=(lon+2)>>2;
+
+	return( ( ((lat&0xffffff)*(1<<28)+lon)*2+1 ) * ((1<<(lat>>24))>>>0) );
+};
+
+/** @return {number} */
 gis.MU.prototype.toNum=function() {
-	var lat;
-
-	lat=(this.llat+2)>>2;
-
-	return( ( ((lat&0xffffff)*(1<<28)+((this.llon+2)>>2))*2+1 ) * ((1<<(lat>>24))>>>0) );
+	return(gis.MU.toNum(this.llat,this.llon));
+//	var lat;
+//	lat=(this.llat+2)>>2;
+//	return( ( ((lat&0xffffff)*(1<<28)+((this.llon+2)>>2))*2+1 ) * ((1<<(lat>>24))>>>0) );
 };
 
 /** Unpack coordinate pair from an IEEE 754 double precision number.
-  * @param {number} n */
+  * @param {number} n
+  * @return {gis.MU} */
 gis.MU.prototype.fromNum=function(n) {
     var e;
 
