@@ -529,3 +529,22 @@ var NodeStat=function() {};
 
 /** @type {number} */
 NodeStat.prototype.size;
+
+/** @typedef {Object.<string,Array.<string>>} */
+var Primitive;
+
+/** @typedef {Array.<Primitive>} */
+var PrimitiveList;
+
+/** @typedef {Primitive|PrimitiveList} */
+var PrimitiveGroup;
+
+/** @typedef {{granularity:number,stringtable:{s:Array.<Buffer>},primitivegroup:Array.<Object.<string,PrimitiveGroup>>}} */
+var PrimitiveBlock;
+
+/** @constructor */
+var PrimitiveBlockParser=function() {};
+
+/** @param {Buffer} data
+  * @return {PrimitiveBlock} */
+PrimitiveBlockParser.prototype.parse=function(data) {};

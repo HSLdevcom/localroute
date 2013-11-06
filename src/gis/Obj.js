@@ -57,5 +57,6 @@ if(gis.env.platform==gis.env.Type.NODE) {
 	eval("var Stream=require('stream');");
 	eval("var util=require('util');");
 	eval("var childProcess=require('child_process');");
-	eval("var lz77=require('lz77');");
+	eval("var protobuf=require('protobuf');");
+	eval("var zlib=require('zlib');");
 }
