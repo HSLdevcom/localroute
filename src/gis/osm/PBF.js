@@ -67,6 +67,7 @@ goog.require('gis.osm.Node');
 goog.require('gis.osm.WaySet');
 goog.require('gis.osm.ProfileSet');
 goog.require('gis.osm.TagTable');
+goog.require('gis.bin.OsmDesc');
 
 /** @constructor
   * @param {gis.osm.MapSet} mapSet */
@@ -465,7 +466,7 @@ gis.osm.PBF.prototype.addMask=function(sw,ne) {
 /** @param {string} path
   * @param {string} descPath
   * @param {function()} done */
-gis.osm.PBF.prototype.importPBF=function(path,descPath,done) {
+gis.osm.PBF.prototype.importPBF=function(path,done) {
 	/** @type {gis.osm.PBF} */
 	var self=this;
 	var nodeSet;
@@ -553,7 +554,7 @@ gis.osm.PBF.prototype.importPBF=function(path,descPath,done) {
 	waySet=this.mapSet.waySet;
 
 	// To create the file run: protoc -oosm.desc fileformat.proto osmformat.proto
-	schema=new Schema(fs.readFileSync(descPath));
+	schema=new Schema(new Buffer(gis.bin.OsmDesc,'base64'));
 
 	hdrParser=schema['BlockHeader'];
 	blobParser=schema['Blob'];

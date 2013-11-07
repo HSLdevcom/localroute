@@ -86,8 +86,8 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 		data+=txt;
 	};
 
-	this.stopSet.getNames(transSet.nameSet);
-	this.keySet.getNames(transSet.nameSet);
+	this.stopSet.getNames(this.nameSet);
+	this.keySet.getNames(this.nameSet);
 
 	this.nameSet.sortNames();
 
@@ -96,7 +96,7 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 	dataList.push(data);
 
 	data='';
-	this.stopSet.exportPack(new gis.io.PackStream(null,writeData),transSet.nameSet);
+	this.stopSet.exportPack(new gis.io.PackStream(null,writeData),this.nameSet);
 	dataList.push(data);
 
 	this.stopSet.clearFollowers();
@@ -109,7 +109,7 @@ reach.trans.TransSet.prototype.exportPack=function(stream) {
 	dataList.push(data);
 
 	data='';
-	this.keySet.exportPack(new gis.io.PackStream(null,writeData),transSet.nameSet);
+	this.keySet.exportPack(new gis.io.PackStream(null,writeData),this.nameSet);
 	dataList.push(data);
 
 	this.tripSet.groupTrips();
