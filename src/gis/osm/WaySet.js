@@ -2,7 +2,7 @@
 	OSM Squeezer
 
 	Copyright (c) "2013, by Aalto University, Finland;
-	             Contributors: Juha Järvi <juha.jarvi@aalto.fi>;
+	             Contributors: Juha JÃ¤rvi <juha.jarvi@aalto.fi>;
 	             Affiliation: Helsinki Institute for Information Technology HIIT;
 	             Project: CultAR;
 	             Task manager: Antti Nurminen <andy@iki.fi>;
