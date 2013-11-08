@@ -37,7 +37,10 @@ gis.enc.CSVStream=function() {
 	this.quote=false;
 };
 
-util.inherits(gis.enc.CSVStream,Stream.Transform);
+try {
+	eval("Stream=require('stream');");
+	eval("require('util').inherits(gis.enc.CSVStream,Stream.Transform);");
+} catch(e) {}
 
 /** @param {string} line
   * @return {boolean} */

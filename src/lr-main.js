@@ -40,6 +40,11 @@ function init() {
 	var stream;
 	var fd;
 
+	eval("fs=require('fs');");
+	eval("sys=require('sys');");
+//	eval("Iconv=require('iconv').Iconv;");  For future Shapefile support.
+	eval("util=require('util');");
+
 	opt=new gis.util.Opt({
 		date:['D|date','DATE',null,'Start date in yyyy-mm-dd format, default today'],
 		days:['d|days','DATE',null,'Number of days to include in schedule'],
@@ -85,9 +90,18 @@ function init() {
 
 	if(opt.def.inGTFS) {
 		taskList.push(function() {
+			eval("childProcess=require('child_process');");
 			transSet=new reach.trans.TransSet(dateStart);
 			gtfs=new reach.trans.GTFS(transSet);
 			gtfs.importZip(opt.def.inGTFS,dateStart,dayCount,nextTask);
+		});
+	}
+
+	if(opt.def.inKalkati) {
+		taskList.push(function() {
+			eval("childProcess=require('child_process');");
+			eval("expat=require('node-expat');");
+			nextTask();
 		});
 	}
 
@@ -133,7 +147,10 @@ function init() {
 
 	if(opt.def.inPBF) {
 		taskList.push(function() {
+			var pbf;
+
 			eval("Schema=require('protobuf').Schema;");
+			eval("zlib=require('zlib');");
 			mapSet=new gis.osm.MapSet();
 			pbf=new gis.osm.PBF(mapSet);
 			pbf.importPBF(opt.def.inPBF,nextTask);
@@ -157,6 +174,6 @@ function init() {
 	nextTask();
 }
 
-if(process && process.argv && typeof(process.argv[1])=='string' && process.argv[1].match(/(^|[/])lr.js$/)) {
+if(typeof(process)!='undefined' && process.argv && typeof(process.argv[1])=='string' && process.argv[1].match(/(^|[/])lr.js$/)) {
 	init();
 }

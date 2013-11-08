@@ -48,15 +48,3 @@ if(typeof(process)!='undefined' && process.versions && process.versions.node) {
 } else {
 	gis.env.platform=gis.env.Type.UNKNOWN;
 }
-
-if(gis.env.platform==gis.env.Type.NODE) {
-	eval("var fs=require('fs');");
-	eval("var sys=require('sys');");
-	eval("var Iconv=require('iconv').Iconv;");
-	eval("var expat=require('node-expat');");
-	eval("var Stream=require('stream');");
-	eval("var util=require('util');");
-	eval("var childProcess=require('child_process');");
-	eval("var protobuf=require('protobuf');");
-	eval("var zlib=require('zlib');");
-}

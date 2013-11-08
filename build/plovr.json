@@ -3,9 +3,8 @@
 	'inputs':'../src/lr-main.js',
 	'paths':['../src/gis','../src/reach'],
 	'externs':'../src/extern.js',
-	'custom-externs-only':true,
 	'closure-library':'../shim',
-	'mode':'ADVANCED',
+//	'mode':'ADVANCED',
 	'checks':{
 		'checkTypes':'WARNING',
 		'reportUnknownTypes':'WARNING',
