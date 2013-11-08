@@ -1,0 +1,15 @@
+{
+	'id':'lr',
+	'inputs':'../src/lr-main.js',
+	'paths':['../src/gis','../src/reach'],
+	'externs':'../src/extern.js',
+	'custom-externs-only':true,
+	'closure-library':'../shim',
+	'mode':'ADVANCED',
+	'checks':{
+		'checkTypes':'WARNING',
+		'reportUnknownTypes':'WARNING',
+		'undefinedVars':'WARNING',
+		'uselessCode':'WARNING'
+	}
+}
