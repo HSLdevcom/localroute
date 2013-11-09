@@ -37,7 +37,6 @@ function init() {
 	var taskList;
 	var transSet;
 	var mapSet;
-	var stream;
 	var fd;
 
 	eval("fs=require('fs');");
@@ -115,6 +114,8 @@ function init() {
 
 	if(opt.def.inTrans) {
 		taskList.push(function() {
+			var stream;
+
 			transSet=new reach.trans.TransSet();
 			stream=new gis.io.PackStream(fs.readFileSync(opt.def.inTrans,'utf8'),null);
 			transSet.importPack(stream);
@@ -135,6 +136,8 @@ function init() {
 
 	if(opt.def.outTrans) {
 		taskList.push(function() {
+			var stream;
+
 			fd=fs.openSync(opt.def.outTrans,'w');
 			stream=new gis.io.PackStream(null,write);
 			transSet.exportPack(stream);
@@ -161,8 +164,9 @@ function init() {
 
 	if(opt.def.outMap) {
 		taskList.push(function() {
-			fd=fs.openSync(opt.def.outMap,'w');
+			var stream;
 
+			fd=fs.openSync(opt.def.outMap,'w');
 			stream=new gis.io.PackStream(null,write);
 			mapSet.waySet.detail=2;
 			mapSet.exportPack(stream);

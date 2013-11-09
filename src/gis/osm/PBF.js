@@ -274,7 +274,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 
 		tagCount=desc['keys'].length;
 		for(tagNum=0;tagNum<tagCount;tagNum++) {
-			if(keepKeyTbl[desc['keys'][tagNum]]) break;
+			if(keepKeyTbl[+desc['keys'][tagNum]]) break;
 		}
 
 		// Ignore the way if no interesting keys were found.
@@ -312,7 +312,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 					prevWay=way;
 					way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
 					if(prevWay) prevWay.next=way;
-					else wayTbl[desc['id']]=way;
+					else wayTbl[+desc['id']]=way;
 //console.log(desc['id']);
 				}
 
@@ -330,7 +330,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 				prevWay=way;
 				way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
 				if(prevWay) prevWay.next=way;
-				else wayTbl[desc['id']]=way;
+				else wayTbl[+desc['id']]=way;
 //console.log(desc['id']);
 			}
 		}
@@ -354,6 +354,8 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet) {
 	var nodeCount;
 	var wayCount;
 	var tagTbl;
+	var tagNum,tagCount;
+	var key,val;
 	var type;
 
 	nodeTbl=nodeSet.tbl;
@@ -464,7 +466,6 @@ gis.osm.PBF.prototype.addMask=function(sw,ne) {
 };
 
 /** @param {string} path
-  * @param {string} descPath
   * @param {function()} done */
 gis.osm.PBF.prototype.importPBF=function(path,done) {
 	/** @type {gis.osm.PBF} */
@@ -473,14 +474,15 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	var profileSet;
 	var waySet;
 	var fd;
+	var schema;
+	/** @type {Buffer} */
 	var hdrBuf;
-	var hdrLen;
+	/** @type {HdrParser} */
 	var hdrParser;
-	var hdr;
+	/** @type {Buffer} */
 	var blobBuf;
-	var blobLen;
+	/** @type {BlobParser} */
 	var blobParser;
-	var blob;
 	/** @type {PrimitiveBlockParser} */
 	var primParser;
 	var prim;
@@ -525,20 +527,22 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 			hdr=hdrParser.parse(hdrBuf.slice(0,hdrLen));
 
 			// Blob length.
-			blobLen=hdr['datasize'];
+			blobLen=hdr.datasize;
 			// Blob.
 			fs.readSync(fd,blobBuf,0,blobLen,null);
 
 			if(hdr.type=='OSMData') {
 				blob=blobParser.parse(blobBuf.slice(0,blobLen));
-				zBuf=blob['zlibData'];
+				zBuf=blob.zlibData;
 
 				if(zBuf) {
+					zlib.inflate(zBuf,
 					/** @param {Buffer} data */
-					zlib.inflate(zBuf,function(err,data) {
-						if(!data) return;
-						parseBlock(data);
-					});
+						function(err,data) {
+							if(!data) return;
+							parseBlock(data);
+						}
+					);
 
 					return;
 				}
@@ -556,8 +560,8 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	// To create the file run: protoc -oosm.desc fileformat.proto osmformat.proto
 	schema=new Schema(new Buffer(gis.bin.OsmDesc,'base64'));
 
-	hdrParser=schema['BlockHeader'];
-	blobParser=schema['Blob'];
+	hdrParser=/** @type {HdrParser} */ (schema['BlockHeader']);
+	blobParser=/** @type {BlobParser} */ (schema['Blob']);
 	primParser=/** @type {PrimitiveBlockParser} */ (schema['PrimitiveBlock']);
 
 	hdrBuf=new Buffer(gis.osm.PBF.hdrMax);

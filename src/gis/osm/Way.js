@@ -57,6 +57,8 @@ gis.osm.Way=function() {
 	this.name;
 	/** @type {gis.osm.WayProfile} Road classification, access rights and other characteristics. */
 	this.profile;
+	/** @type {number} */
+	this.id;
 
 	/** @type {gis.osm.Way} */
 	this.next;
@@ -71,6 +73,9 @@ gis.osm.Way=function() {
 	/** @type {Array.<number>} */
 	this.costList;
 
+	/** @type {gis.osm.WayChain} */
+	this.chain;
+
 	/** @type {Array.<gis.osm.Way>} */
 	this.nearWayList;
 	/** @type {Array.<number>} */
@@ -78,7 +83,7 @@ gis.osm.Way=function() {
 
 	/** @type {Array.<number|gis.osm.Node>} */
 	this.extraPtList;
-	/** @type {number} */
+	/** @type {Array.<number>} */
 	this.extraPosList;
 };
 
@@ -90,11 +95,15 @@ gis.osm.Way.Near;
   * @param {gis.osm.NodeSet} nodeSet
   * @return {gis.osm.Node} */
 gis.osm.Way.prototype.promoteNode=function(pos,nodeSet) {
+	var pt;
 	var node;
 
-	node=nodeSet.createNode(gis.MU.fromNum(this.ptList[pos]),false);
-	node.addWay(this,pos);
-	this.ptList[pos]=node;
+	pt=this.ptList[pos];
+	if(typeof(pt)=='number') {
+		node=nodeSet.createNode(gis.MU.fromNum(pt),false);
+		node.addWay(this,pos);
+		this.ptList[pos]=node;
+	} else node=pt;
 
 	return(node);
 };
@@ -104,17 +113,21 @@ gis.osm.Way.prototype.promoteNode=function(pos,nodeSet) {
   * @return {number} */
 gis.osm.Way.prototype.demoteNode=function(pos) {
 	var node;
+	var num;
 
 	node=this.ptList[pos];
 	if(typeof(node)=='number') return(node);
-	this.ptList[pos]=node.ll.toNum();
+	num=node.ll.toNum();
+	this.ptList[pos]=num;
 
-	return(this.ptList[pos]);
+	return(num);
 };
 
 /** @return {gis.geom.BB} */
 gis.osm.Way.prototype.getBB=function() {
+	var ptList;
 	var ptNum,ptCount;
+	var pt;
 	var ll;
 	var lat,lon;
 	var boundS,boundW;
@@ -122,26 +135,15 @@ gis.osm.Way.prototype.getBB=function() {
 
 	if(this.bb) return(this.bb);
 
+	boundS=gis.MU.range;
+	boundW=gis.MU.range;
+	boundN=0;
+	boundE=0;
+
 	ptList=this.ptList;
 	ptCount=ptList.length;
 
-	ptNum=this.ptStart;
-
-	while(ptNum<ptCount) {
-		pt=ptList[ptNum++];
-		if(!pt) continue;
-
-		if(typeof(pt)=='number') ll=gis.MU.ll.fromNum(pt);
-		else ll=pt.ll;
-
-		boundS=ll.llat;
-		boundN=ll.llat;
-		boundW=ll.llon;
-		boundE=ll.llon;
-		break;
-	}
-
-	while(ptNum<ptCount) {
+	for(ptNum=this.ptStart;ptNum<ptCount;) {
 		pt=ptList[ptNum++];
 		if(!pt) continue;
 
@@ -182,12 +184,16 @@ gis.osm.Way.prototype.douglasPeucker=function(pos1,lat1,lon1,pos2,lat2,lon2,minD
 	dlon=lon2-lon1;
 	len=dlat*dlat+dlon*dlon;
 
+	// Initialize variables to keep Closure Compiler happy.
+	latSplit=0;
+	lonSplit=0;
+
 	ptList=this.ptList;
 	maxDist=0;
 
 	for(pos=pos1;pos<=pos2;pos++) {
 		if(!ptList[pos]) continue;
-		ll=gis.MU.ll.fromNum(ptList[pos]);
+		ll=gis.MU.ll.fromNum(/** @type {number} */ (ptList[pos]));
 
 		u=(ll.llat-lat1)*dlat+(ll.llon-lon1)*dlon;
         
@@ -250,6 +256,7 @@ gis.osm.Way.prototype.simplify=function(tolerance) {
 gis.osm.Way.prototype.merge=function(other) {
 	var ptList;
 	var ptNum,ptCount,ptStart;
+	var pt;
 	var otherStart;
 	var off;
 	var node;
@@ -269,17 +276,18 @@ gis.osm.Way.prototype.merge=function(other) {
 
 	if(ptList[ptNum]==other.ptList[otherStart]) {
 		other.ptList[otherStart].removeWay(other,otherStart);
-		ptList=ptList.concat(other.ptList.slice(otherStart+1));
+		ptList=/** @type {Array.<number|gis.osm.Node>} */ (ptList.concat(other.ptList.slice(otherStart+1)));
 		off--;
-	} else ptList=ptList.concat(other.ptList.slice(otherStart));
+	} else ptList=/** @tyoe {Array.<number|gis.osm.Node>} */ (ptList.concat(other.ptList.slice(otherStart)));
 	off-=otherStart;
 
 	this.ptList=ptList;
 
 	ptCount=ptList.length;
 	for(;ptNum<ptCount;ptNum++) {
-		node=ptList[ptNum];
-		if(typeof(node)=='number') continue;
+		pt=ptList[ptNum];
+		if(typeof(pt)=='number') continue;
+		node=/** @type {gis.osm.Node} */ (pt);
 
 		wayList=node.wayList;
 		wayCount=wayList.length;
@@ -321,10 +329,12 @@ gis.osm.Way.prototype.reverse=function() {
 };
 
 /** @param {gis.io.PackStream} stream
+  * @param {Object.<string,number>} exportTbl
+  * @param {gis.osm.WaySet.ExportState} state
   * @param {number} nameId */
 gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
-	var lat,lon,latPrev,lonPrev,dlat,dlon;
-	var keyLat,keyLon,keyLatPrev,keyLonPrev;
+	var lat,latPrev,dlat,dlat2,latExtra,keyLat,keyLatPrev;
+	var lon,lonPrev,dlon,dlon2,lonExtra,keyLon,keyLonPrev;
 	var hdr,pair;
 	var ptList;
 	var ptNum,ptCount,ptStart,dropCount,outCount;
@@ -425,7 +435,7 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 				node.exportKey=exportTbl[key]++;
 			}
 		} else {
-			if(node.exportKey) {	// TODO: this test shouldn't be needed...
+//			if(node.exportKey) {	// TODO: this test shouldn't be needed...
 				keyLatPrev=(latPrev+tileOff)>>tileSize;
 				keyLonPrev=(lonPrev+tileOff)>>tileSize;
 				keyLat=lat>>tileSize;
@@ -439,7 +449,7 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 
 				if(keyLon==keyLonPrev-1) quad|=2;
 				else if(keyLon!=keyLonPrev) quad=4;
-			} else quad=4;
+//			} else quad=4;
 
 			if(quad>=4) {
 //				state.missLen+=stream.writeLong([(state.exportId-node.iterId-1)*10+8]);
@@ -449,15 +459,8 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 				state.missCount++;
 			} else {
 //				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey-1)*10+quad*2]);
-/*
-if(node.exportKey>exportTbl[key]) {
-console.log(node.iterId+' '+node.exportKey+' '+exportTbl[key]);
-console.log(''+node.ll);
-console.log(key);
-}
-*/
-				// The following leaves codes 0, 2, 4 and 6 unused.
 //				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey)*10+quad*2]);
+				// The following leaves codes 0, 2, 4 and 6 unused.
 				outList.push((exportTbl[key]-node.exportKey)*10+quad*2);
 				state.hitCount++;
 			}
@@ -466,8 +469,6 @@ console.log(key);
 		if(extraPosList) {
 			dlat2=lat-latPrev;
 			dlon2=lon-lonPrev;
-lat2=lat;
-lon2=lon;
 
 			extraScale=(dlat2<0?-dlat2:dlat2)+(dlon2<0?-dlon2:dlon2);
 			while(extraNum<extraCount && (extraPos=extraPosList[extraNum])<ptNum) {
@@ -478,12 +479,12 @@ extraScale=1024;
 off=~~((extraPos-~~extraPos)*extraScale);
 					outList.push(8,off);
 off/=extraScale;
-lat=~~((lat2<<detail)+(dlat2*off-dlat2)*(1<<detail)+roundOff*0)>>detail;
-lon=~~((lon2<<detail)+(dlon2*off-dlon2)*(1<<detail)+roundOff*0)>>detail;
-node.ll=new gis.MU(lat<<detail,lon<<detail);
+latExtra=~~((lat<<detail)+(dlat2*off-dlat2)*(1<<detail)+roundOff*0)>>detail;
+lonExtra=~~((lon<<detail)+(dlon2*off-dlon2)*(1<<detail)+roundOff*0)>>detail;
+node.ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 
-					keyLat=lat>>tileSize;
-					keyLon=lon>>tileSize;
+					keyLat=latExtra>>tileSize;
+					keyLon=lonExtra>>tileSize;
 					key=keyLat+' '+keyLon;
 
 					if(!exportTbl[key]) {
@@ -497,8 +498,6 @@ node.ll=new gis.MU(lat<<detail,lon<<detail);
 
 				extraNum++;
 			}
-lat=lat2;
-lon=lon2;
 		}
 	}
 
@@ -510,13 +509,17 @@ stream.writeLong(outList);
 };
 
 /** @param {gis.io.PackStream} stream
+  * @param {Object.<string,Array.<gis.osm.Node>>} importTbl
   * @param {gis.osm.NodeSet} nodeSet
+  * @param {gis.osm.WaySet.ImportState} state
   * @param {gis.osm.ProfileSet} profileSet
-  * @param {gis.osm.NameSet} nameSet */
+  * @param {gis.enc.NameSet} nameSet */
 gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profileSet,nameSet) {
 	var ptList;
 	var ptNum,ptCount;
-	var lat,lon,dlat,dlon;
+	var lat,dlat,latExtra;
+	var lon,dlon,lonExtra;
+	var code,quad,off;
 	var keyLat,keyLon;
 	var key;
 	var group;
@@ -527,9 +530,8 @@ gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profile
 	var roundOff,tileOff;
 	var dec;
 	var way;
-	var off;
 
-	dec=[];
+	dec=/** @type {Array.<number>} */ ([]);
 	if(nameSet) {
 		stream.readLong(dec,3);
 		state.nameId+=gis.Q.toSigned(dec[2]);
@@ -594,33 +596,33 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 				continue;
 			}
 		} else if(code==8) {
-lat2=lat;
-lon2=lon;
+//lat2=lat;
+//lon2=lon;
 //console.log('FOO '+lat+' '+lon+' '+ll.llat+' '+ll.llon);
 //			stream.readLong(dec,3);
 			stream.readLong(dec,1);
 //console.log(dlat+'\t'+gis.Q.toSigned(dec[1])+'\t'+dlon+'\t'+gis.Q.toSigned(dec[2]));
 //			off=dec[0]/((dlat<0?-dlat:dlon)+(dlon<0?-dlon:dlon));
-dlat2=dlat;
-dlon2=dlon;
+//dlat2=dlat;
+//dlon2=dlon;
 //			extraScale=(dlat2<0?-dlat2:dlat2)+(dlon2<0?-dlon2:dlon2);
-extraScale=1024;
+var extraScale=1024;
 off=dec[0]/extraScale;
 
-lat=~~((lat2<<detail)+(dlat2*off-dlat2)*(1<<detail)+roundOff*0)>>detail;
-lon=~~((lon2<<detail)+(dlon2*off-dlon2)*(1<<detail)+roundOff*0)>>detail;
+latExtra=~~((lat<<detail)+(dlat*off-dlat)*(1<<detail)+roundOff*0)>>detail;
+lonExtra=~~((lon<<detail)+(dlon*off-dlon)*(1<<detail)+roundOff*0)>>detail;
 //console.log('FOO '+lat2+' '+lon2+' '+lat+' '+lon+' '+dlat2+' '+dlon2+' '+off);
 //dlat+=lat-lat2;
 //dlon+=lon-lon2;
 //			ll=new gis.MU((lat<<detail)+~~((dlat*off-dlat)*(1<<detail))+roundOff,(lon<<detail)+~~((dlon*off-dlon)*(1<<detail))+roundOff);
 //ll=new gis.MU((lat<<detail)+roundOff,(lon<<detail)+roundOff);
-ll=new gis.MU(lat<<detail,lon<<detail);
+ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 //lat=ll.llat>>detail;
 //lon=ll.llon>>detail;
 			node2=nodeSet.createNode(ll,true);
 
-			keyLat=lat>>tileSize;
-			keyLon=lon>>tileSize;
+			keyLat=latExtra>>tileSize;
+			keyLon=lonExtra>>tileSize;
 			key=keyLat+' '+keyLon;
 
 			group=importTbl[key];
@@ -629,8 +631,8 @@ ll=new gis.MU(lat<<detail,lon<<detail);
 
 			ptList[ptNum-1]=node2;
 			node2.addWay(this,ptNum-1);
-lat=lat2;
-lon=lon2;
+//lat=lat2;
+//lon=lon2;
 		} else {
 			if(node) {
 				ptList[ptNum-1]=node;
@@ -691,7 +693,7 @@ gis.osm.Way.prototype.calcDist=function() {
 
 	dist=0;
 	distList=[dist];
-	llNum=[new gis.MU(0,0),new gis.MU(0,0)];
+	llNum=/** @type {Array.<gis.MU>} */ ([new gis.MU(0,0),new gis.MU(0,0)]);
 	ll=null;
 
 	ptList=this.ptList;
@@ -719,13 +721,19 @@ gis.osm.Way.prototype.calcDist=function() {
   * @param {number} lonSrc
   * @param {number} pos
   * @param {number} posLast
+  * @param {gis.osm.Way.Near} nearest
+  * @param {number} dlatSrc
+  * @param {number} dlonSrc
+  * @param {number} angleWeight
   * @return {gis.osm.Way.Near} */
 gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dlatSrc,dlonSrc,angleWeight) {
 	var ptList;
 	var pt;
 	var ll;
 	var posPrev;
-	var lat,lon,latPrev,lonPrev,dlat,dlon,dlat2,dlon2;
+	var lat,latPrev,dlat,dlat2;
+	var lon,lonPrev,dlon,dlon2;
+	var dist;
 	var offset;
 	var bestDist,bestOffset;
 	var bestPos,bestNext;

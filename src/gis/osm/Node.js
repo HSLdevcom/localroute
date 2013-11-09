@@ -53,6 +53,11 @@ gis.osm.Node=function(ll) {
 
 	/** @type {Object.<string,string>} */
 	this.tagTbl;
+	/** @type {boolean} */
+	this.important;
+
+	/** @type {gis.osm.Node} */
+	this.replacement;
 };
 
 /** @param {gis.osm.Way} way
@@ -89,6 +94,8 @@ gis.osm.Node.prototype.removeWay=function(way,pos) {
 	}
 };
 
+/** @param {string} msg */
+/*
 gis.osm.Node.prototype.check=function(msg) {
 	var posList;
 	var wayList;
@@ -102,3 +109,4 @@ gis.osm.Node.prototype.check=function(msg) {
 		if(posList[wayNum]>=wayList[wayNum].ptList.length) console.log('ERROR '+msg);
 	}
 };
+*/

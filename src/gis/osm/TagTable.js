@@ -40,6 +40,7 @@ goog.require('gis.Obj');
 
 /** @constructor */
 gis.osm.TagTable=function() {
+	/** @type {Object.<string,string>} */
 	this.tbl={};
 };
 
@@ -47,6 +48,7 @@ gis.osm.TagTable.DENY={};
 gis.osm.TagTable.AVOID={};
 gis.osm.TagTable.REVERSE={};
 
+/** @type {Object.<string,number|Object>} */
 gis.osm.TagTable.boolTbl={
 	'no':0,
 	'yes':1,
@@ -78,7 +80,8 @@ gis.osm.TagTable.prototype.insert=function(key,val) {
     if(lower==key || !this.tbl[lower]) this.tbl[lower]=val;
 };
 
-/** @param {string} key */
+/** @param {string} key
+  * @return {string} */
 gis.osm.TagTable.prototype.getString=function(key) {
 	return(this.tbl[key] || '');
 };
@@ -113,7 +116,7 @@ gis.osm.TagTable.prototype.getNum=function(key,miss,err) {
 
 	if(!this.tbl.hasOwnProperty(key)) return(miss);
 
-	num=parseInt(this.tbl[key]);
+	num=parseInt(this.tbl[key],10);
 //	if(!num && num!==0) {console.log(tbl[key]);return(err);}
 	if(!num && num!==0) return(err);
 

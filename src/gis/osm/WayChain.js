@@ -39,7 +39,9 @@ goog.provide('gis.osm.WayChain');
 goog.require('gis.Obj');
 goog.require('gis.osm.Way');
 
-/** @constructor */
+/** @constructor
+  * @param {gis.osm.Way} way1
+  * @param {gis.osm.Way} way2 */
 gis.osm.WayChain=function(way1,way2) {
 	/** @type {Array.<gis.osm.Way>} */
 	this.wayList=[way1,way2];
@@ -47,12 +49,15 @@ gis.osm.WayChain=function(way1,way2) {
 	this.deleted;
 };
 
+/** @param {gis.osm.Way} way
+  * @return {gis.osm.WayChain} */
 gis.osm.WayChain.prototype.insert=function(way) {
 	this.wayList.push(way);
 	return(this);
 };
 
-/** @param {gis.osm.WayChain} other */
+/** @param {gis.osm.WayChain} other
+  * @return {gis.osm.WayChain} */
 gis.osm.WayChain.prototype.merge=function(other) {
 	var wayList;
 	var wayNum,wayCount;

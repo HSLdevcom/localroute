@@ -17,17 +17,26 @@ goog.provide('gis.util.Opt');
 
 /** @constructor
   * @param {Object.<string,Array.<*>>} conf
+  * @param {Array.<string>} restConf
   * @param {string} appName
   * @param {string} ver
   * @return {Object.<string,*>} */
 gis.util.Opt=function(conf,restConf,appName,ver) {
+	/** @type {Object.<string,Array.<*>>} */
 	this.conf=conf;
+	/** @type {Array.<string>} */
 	this.restConf=restConf;
 	this.restTbl={};
 	/** @type {string} */
 	this.appName=appName;
 	/** @type {string} */
 	this.ver=ver;
+	/** @type {Object.<string,string>} */
+	this.def;
+	/** @type {Object.<string,string>} */
+	this.undef;
+	/** @type {Array.<string>} */
+	this.rest;
 };
 
 /** @param {Array.<string>} argv */
@@ -84,7 +93,7 @@ gis.util.Opt.prototype.parse=function(argv) {
 	for(var key in conf) {
 		if(!conf.hasOwnProperty(key)) continue;
 		def=conf[key];
-		fields=(/** @type {string} */ def[0]).split(/[ ,|]/);
+		fields=(/** @type {string} */ (def[0])).split(/[ ,|]/);
 		keyCount=fields.length;
 		for(keyNum=0;keyNum<keyCount;keyNum++) {
 //			alias[fields[keyNum]]=key;

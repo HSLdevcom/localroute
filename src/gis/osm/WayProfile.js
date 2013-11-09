@@ -143,7 +143,8 @@ gis.osm.WayProfile.prototype.getImportant=function(name) {
 		this.type==gis.osm.WayProfile.Type.PLATFORM);
 };
 
-/** @param {gis.osm.WayProfile} other */
+/** @param {gis.osm.WayProfile} other
+  * @return {boolean} */
 gis.osm.WayProfile.prototype.matchLayer=function(other) {
 	return(this.layer==other.layer && this.tunnel==other.tunnel && this.bridge==other.bridge);
 };

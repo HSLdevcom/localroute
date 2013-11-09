@@ -39,7 +39,7 @@ goog.provide('gis.osm.QuadTile');
 goog.require('gis.Obj');
 
 /** @constructor
-  * @param {gis.geom.bb} */
+  * @param {gis.geom.BB} bb */
 gis.osm.QuadTile=function(bb) {
 	/** @type {gis.geom.BB} */
 	this.bb=bb;
@@ -79,7 +79,8 @@ gis.osm.QuadTile.Pos={
 
 /** @param {number} lat
   * @param {number} lon
-  * @param {boolean} create */
+  * @param {boolean} create
+  * @return {gis.osm.QuadTile} */
 gis.osm.QuadTile.prototype.getNext=function(lat,lon,create) {
 	var latSplit,lonSplit;
 	var quadNum;
@@ -126,7 +127,8 @@ gis.osm.QuadTile.prototype.insertWayLeaf=function(way,posFirst,posLast) {
 	var ptList;
 	var pt;
 	var ll;
-	var lat,lon;
+	var lat,lat1,lat2;
+	var lon,lon1,lon2;
 
 	ptList=way.ptList;
 
@@ -182,7 +184,8 @@ gis.osm.QuadTile.prototype.insertWaySub=function(lat,lon,way,posFirst,posLast) {
   * @param {boolean} latSide
   * @param {boolean} lonSide
   * @param {boolean} latSidePrev
-  * @param {boolean} lonSidePrev */
+  * @param {boolean} lonSidePrev
+  * @return {boolean} */
 gis.osm.QuadTile.prototype.splitBoxTest=function(lat,lon,latPrev,lonPrev,latSide,lonSide,latSidePrev,lonSidePrev) {
 	var latTest,lonTest;
 
@@ -212,7 +215,7 @@ gis.osm.QuadTile.prototype.splitBoxTest=function(lat,lon,latPrev,lonPrev,latSide
   * @param {number} latSplit
   * @param {number} lonSplit */
 gis.osm.QuadTile.prototype.splitWay=function(way,posFirst,posLast,latSplit,lonSplit) {
-	var pos,posAccept,posPrev,posSplit;
+	var pos,posPrev,posSplit;
 	var ptList;
 	var pt;
 	var ll;
@@ -224,13 +227,14 @@ gis.osm.QuadTile.prototype.splitWay=function(way,posFirst,posLast,latSplit,lonSp
 	ptCount=0;
 
 	posSplit=posFirst;
+	// Initialize variables to keep Closure Compiler happy.
+	lat=0;latPrev=0;latSide=false;latSidePrev=false;
+	lon=0;lonPrev=0;lonSide=false;lonSidePrev=false;
+	posPrev=-1;
 
 	for(pos=posFirst;pos<=posLast;pos++) {
 		pt=ptList[pos];
 		if(!pt) continue;
-
-		posPrev=posAccept;
-		posAccept=pos;
 
 		latPrev=lat;
 		lonPrev=lon;
@@ -245,9 +249,11 @@ gis.osm.QuadTile.prototype.splitWay=function(way,posFirst,posLast,latSplit,lonSp
 		latSide=lat>=latSplit;
 		lonSide=lon>=lonSplit;
 
-		if(!ptCount++) continue;
-		// Do nothing while staying in the same quad.
-		if(latSide==latSidePrev && lonSide==lonSidePrev) continue;
+		// Do nothing for first point or while staying in the same quad.
+		if(!ptCount++ || (latSide==latSidePrev && lonSide==lonSidePrev)) {
+			posPrev=pos;
+			continue;
+		}
 
 		// Check if crossing quads diagonally.
 		if(latSide!=latSidePrev && lonSide!=lonSidePrev) {
@@ -272,6 +278,7 @@ gis.osm.QuadTile.prototype.splitWay=function(way,posFirst,posLast,latSplit,lonSp
 		this.insertWaySub(latPrev,lonPrev,way,posSplit,pos);
 
 		posSplit=posPrev;
+		posPrev=pos;
 	}
 
 	// Check if bounding box was exited passing over a sub-quad.
@@ -280,26 +287,17 @@ gis.osm.QuadTile.prototype.splitWay=function(way,posFirst,posLast,latSplit,lonSp
 	this.insertWaySub(lat,lon,way,posSplit,posLast);
 };
 
-gis.osm.QuadTile.prototype.insertProbeSub=function(lat,lon,probeNum) {
-	var tile;
-
-	tile=this.getNext(lat,lon,true);
-	tile.probeList.push(this.probeList[probeNum]);
-	tile.probeWayList.push(this.probeWayList[probeNum]);
-	tile.probePosList.push(this.probePosList[probeNum]);
-globalProbeCount++;
-};
-
-// depth parameter is optional
-/** @param {number} maxNodes */
+/** @param {number} maxNodes
+  * @param {number=} depth */
 gis.osm.QuadTile.prototype.split=function(maxNodes,depth) {
 	var latSplit,lonSplit;
 	var quadNum;
 	var wayList;
 	var wayNum,wayCount;
 	var way;
-	var probeList;
-	var probeNum,probeCount;
+	var bb;
+//	var probeList;
+//	var probeNum,probeCount;
 	var firstList,lastList;
 	var pos,posFirst,posLast;
 	var tile;
@@ -309,7 +307,7 @@ gis.osm.QuadTile.prototype.split=function(maxNodes,depth) {
 
 	if(!depth) depth=0;
 
-	this.quadList=[];
+	this.quadList=/** @type {Array.<gis.osm.QuadTile>} */ ([]);
 
 	wayList=this.wayList;
 	firstList=this.firstList;
@@ -338,52 +336,10 @@ gis.osm.QuadTile.prototype.split=function(maxNodes,depth) {
 			this.splitWay(way,posFirst,posLast,latSplit,lonSplit);
 		}
 	}
-/*
-	var probeLen,off;
-	var ll;
-
-	// Right triangle legs for given hypotenuse in meters, scale adjusted for Mercator distortion.
-	off=15/Math.sqrt(2)/gis.MU.getScale(latSplit);
-
-	probeList=this.probeList;
-	probeCount=probeList.length;
-
-	for(probeNum=0;probeNum<probeCount;probeNum++) {
-		ll=probeList[probeNum];
-
-		lat=ll.llat;
-		lon=ll.llon;
-
-		tile=this.getNext(lat,lon,true);
-		tile.probeList.push(ll);
-		tile.probeWayList.push(this.probeWayList[probeNum]);
-		tile.probePosList.push(this.probePosList[probeNum]);
-*/
-/*
-		this.insertProbeSub(lat,lon,probeNum);
-		if(lat>=latSplit-off && lat<latSplit+off) {
-			this.insertProbeSub(latSplit+(latSplit-lat)-0.5,lon,probeNum);
-			if(lon>=lonSplit-off && lon<lonSplit+off) {
-				this.insertProbeSub(lat,lonSplit+(lonSplit-lon)-0.5,probeNum);
-			}
-		}
-
-		if(lon>=lonSplit-off && lon<lonSplit+off) {
-			this.insertProbeSub(lat,lonSplit+(lonSplit-lon)-0.5,probeNum);
-		}
-*/
-//	}
 
 	this.wayList=null;
 	this.firstList=null;
 	this.lastList=null;
-
-/*
-globalProbeCount-=this.probeList.length;
-	this.probeList=null;
-	this.probeWayList=null;
-	this.probePosList=null;
-*/
 
 	if(depth>30) return;
 
@@ -398,6 +354,10 @@ globalProbeCount-=this.probeList.length;
   * @param {number} lon
   * @param {string} name
   * @param {gis.osm.Way.Near} nearest
+  * @param {number} dlatSrc
+  * @param {number} dlonSrc
+  * @param {number} angleWeight
+  * @param {function(gis.osm.Way):boolean} checker
   * @return {gis.osm.Way.Near} */
 gis.osm.QuadTile.prototype.findWay=function(lat,lon,name,nearest,dlatSrc,dlonSrc,angleWeight,checker) {
 	var wayList;

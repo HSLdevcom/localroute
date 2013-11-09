@@ -53,7 +53,8 @@ gis.osm.QuadTree=function(bb) {
 };
 
 /** Find lowest quadtree tile completely containing bounding box.
-  * @param {gis.geom.BB} bb */
+  * @param {gis.geom.BB} bb
+  * @return {gis.osm.QuadTile} */
 gis.osm.QuadTree.prototype.findEnclosing=function(bb) {
 	var latSplit,lonSplit;
 	var tile,next;
@@ -68,7 +69,7 @@ gis.osm.QuadTree.prototype.findEnclosing=function(bb) {
 	next=this.top;
 	if(lat1<next.bb.lat1 || lat2>=next.bb.lat2 || lon1<next.bb.lon1 || lon2>=next.bb.lon2) next=this.root;
 
-	while(next) {
+	do {
 		tile=next;
 		latSplit=tile.latSplit;
 		lonSplit=tile.lonSplit;
@@ -77,7 +78,7 @@ gis.osm.QuadTree.prototype.findEnclosing=function(bb) {
 		if((lat1<latSplit && lat2>=latSplit) || (lon1<lonSplit && lon2>=lonSplit)) return(tile);
 
 		next=tile.getNext(lat1,lon1,false);
-    }
+    } while(next);
 
     return(tile);
 };
@@ -92,9 +93,18 @@ gis.osm.QuadTree.prototype.insertWay=function(way) {
 	else tile.insertWayLeaf(way,0,way.ptList.length-1);
 };
 
-/** @param {gis.MU} ll
+/** @param {number} lat
+  * @param {number} lon
+  * @param {string} name
+  * @param {number} snapDist
+  * @param {gis.osm.QuadTile} root
+  * @param {number} dlatSrc
+  * @param {number} dlonSrc
+  * @param {number} angleWeight
+  * @param {function(gis.osm.Way):boolean} checker
   * @return {gis.osm.Way.Near} */
 gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,dlonSrc,angleWeight,checker) {
+	/** @type {Array.<gis.osm.QuadTile>} */
 	var tileStack;
 	var stackPos;
 	var nearest,sentinel;
@@ -102,9 +112,9 @@ gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,d
 	snapDist/=gis.MU.getScale(lat);
 	angleWeight/=gis.MU.getScale(lat);
 
-	tileStack=/** @type {Array.<reach.road.Tile>} */ [root];
+	tileStack=/** @type {Array.<gis.osm.QuadTile>} */ ([root]);
 	stackPos=1;
-	sentinel=/** @type {gis.osm.Way.Near} */ {way:null,sqDist:snapDist*snapDist,pos:0,posNext:0,offset:0};
+	sentinel=/** @type {gis.osm.Way.Near} */ ({way:null,sqDist:snapDist*snapDist,pos:0,posNext:0,offset:0});
 	nearest=sentinel;
 	if(name) name=gis.osm.Way.trimName(name);
 
@@ -161,10 +171,13 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 		'<Style id="yellowPoly"><LineStyle><color>ffc0c000</color><width>1</width></LineStyle><PolyStyle><color>80008080</color><width>3</width></PolyStyle></Style>\n';
 	write(txt);
 
+	/** @param {gis.osm.QuadTile} tile */
 	function rec(tile) {
 		var quadList;
 		var quadNum;
 		var sw,ne;
+		var firstList;
+		var lastList;
 
 		quadList=tile.quadList;
 		if(quadList) {
@@ -183,13 +196,13 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 		wayList=tile.wayList;
 		firstList=tile.firstList;
 		lastList=tile.lastList;
-
+/*
 		debug=false;
 		wayCount=wayList.length;
 		for(wayNum=0;wayNum<wayCount;wayNum++) {
 			if(wayList[wayNum].debug) debug=true;
 		}
-
+*/
 		txt='<Folder>\n'+
 			'<name>'+tile.bb+'</name>\n'+
 			'<Placemark>\n'+
@@ -201,7 +214,7 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 			sw.llon+','+ne.llat+',0\n'+
 			'</coordinates>\n'+
 			'</LinearRing></outerBoundaryIs></Polygon>\n'+
-			'<styleUrl>'+(debug?'yellowPoly':'redPoly')+'</styleUrl>\n'+
+//			'<styleUrl>'+(debug?'yellowPoly':'redPoly')+'</styleUrl>\n'+
 			'</Placemark>\n';
 		write(txt);
 

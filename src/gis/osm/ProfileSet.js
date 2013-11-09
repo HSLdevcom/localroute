@@ -45,10 +45,12 @@ gis.osm.ProfileSet=function() {
 	var t=gis.osm.WayProfile.Type;
 	var roadTypes,railTypes,transTypes;
 	var typeTagList;
+	var tagList;
+	var tagNum,tagCount;
 	var typeListList;
 	var typeListNum;
 	var typeList;
-	var typeCount;
+	var typeNum,typeCount;
 	var wayClassTbl;
 	var wayTypeTbl;
 	var accessCodeTbl;
@@ -107,7 +109,7 @@ gis.osm.ProfileSet=function() {
 
 	// Modes for transport allowed by default for each way type.
 	// c=car, b=bike, f=foot, w=wheelchair. Capitals mean more suitable.
-	accessList=[			// TODO: these should be integers on a scale 0-9 or .oO or .-+#
+	accessList=/** @type {Array.<gis.osm.WayProfile.Type|string>} */ ([			// TODO: these should be integers on a scale 0-9 or .oO or .-+#
 		t.HIGHWAY, 'C',
 		t.HIGHLINK, 'C',
 		t.FASTCARS,'Cb',	// TODO: it's possible to go on foot on roadside if no other way exists, so allow with high penalty.
@@ -123,13 +125,13 @@ gis.osm.ProfileSet=function() {
 		t.PATH,     'BF',	// TODO: wheelchair is OK for certain surfaces (paved, asphalt, sett, concrete, concrete:lanes, concrete:plates, paving_stones:*, compacted, fine_gravel, tartan).
 		t.STAIRS,    'F',	// TODO: stairs should have a penalty, especially for wheelchairs even if wheelchair=yes. Escalators have lower penalty and are oneway?
 		t.PARKING ,'cBfw'
-    ];
+    ]);
 
 	wayClassTbl={};
 	wayTypeTbl={};
 
 	typeTagList=['highway','public_transport','railway'];
-	typeListList=[roadTypes,transTypes,railTypes];
+	typeListList=/** @type {Array.<Array.<gis.osm.WayProfile.Type|string>>} */ ([roadTypes,transTypes,railTypes]);
 	for(typeListNum=0;typeListNum<typeListList.length;typeListNum++) {
 		typeList=typeListList[typeListNum];
 		typeCount=typeList.length;
@@ -143,9 +145,9 @@ gis.osm.ProfileSet=function() {
 		}
 	}
 
-	/** For OSM import. */
+	/** @type {Object.<string,gis.osm.WayProfile.Type>} For OSM import. */
 	this.wayClassTbl=wayClassTbl;
-	/** For OSM export. */
+	/** @type {Object.<gis.osm.WayProfile.Type,{key:string,val:string}>} For OSM export. */
 	this.wayTypeTbl=wayTypeTbl;
 
 	limitTbl={};
@@ -165,7 +167,9 @@ gis.osm.ProfileSet=function() {
 		accessTbl[accessList[accessNum]]=flag;
 	}
 
+	/** @type {Object.<gis.osm.WayProfile.Type,number>} */
 	this.limitTbl=limitTbl;
+	/** @type {Object.<gis.osm.WayProfile.Type,number>} */
 	this.accessTbl=accessTbl;
 };
 
@@ -182,6 +186,7 @@ gis.osm.ProfileSet.access={
 gis.osm.ProfileSet.prototype.insertWay=function(tagTbl,stream) {
 	var t=gis.osm.WayProfile.Type;
 	var profile,oldProfile;
+	var key;
 	var wayType;
 	var access,limit;
 	var accessFlag;
@@ -220,6 +225,8 @@ gis.osm.ProfileSet.prototype.insertWay=function(tagTbl,stream) {
 	accessFlag=tagTbl.getBool('access',1,1);
 	if(!accessFlag) access=0;
 
+	/** @param {number} flag */
+	/** @param {number} mask */
 	function setAccess(flag,mask) {
 		if(flag===0) access&=~mask;
 		if(flag==0.5) limit|=mask;
@@ -278,6 +285,7 @@ gis.osm.ProfileSet.prototype.sortProfiles=function() {
 /** Get fuzzy match for profiles, return null if they don't combine.
   * @param {gis.osm.WayProfile} p
   * @param {gis.osm.WayProfile} q
+  * @param {boolean} testOnly
   * @return {gis.osm.WayProfile|null} */
 gis.osm.ProfileSet.prototype.matchWays=function(p,q,testOnly) {
 	var testList;
@@ -306,11 +314,11 @@ gis.osm.ProfileSet.prototype.matchWays=function(p,q,testOnly) {
 	}
 
 	// List of values allowing fuzzy match (one may be null).
-	testList=[
+	testList=/** @type {Array.<number>} */ ([
 		p.lanes,q.lanes,
 		p.layer,q.layer,
 		p.lit,q.lit
-	];
+	]);
 
 	testCount=testList.length;
 	for(testNum=0;testNum<testCount;testNum+=2) {

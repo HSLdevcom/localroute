@@ -41,6 +41,7 @@ goog.require('gis.Q');
 goog.require('gis.geom.BB');
 goog.require('gis.osm.Way');
 goog.require('gis.osm.WayChain');
+goog.require('gis.osm.QuadTree');
 goog.require('gis.enc.NameSet');
 
 /** Set of ways, detects shared nodes to create topology for routing.
@@ -54,6 +55,11 @@ gis.osm.WaySet=function() {
 	this.count=0;
 	/** @type {number} */
 	this.runId=1;
+	/** @type {gis.osm.QuadTree} */
+	this.tree;
+
+	/** @type {number} */
+	this.detail;
 };
 
 /** @type {number} */
@@ -138,7 +144,7 @@ gis.osm.WaySet.prototype.linkChains=function(profileSet) {
 	var pos;
     var profile;
 
-	chainList=[];
+	chainList=/** @type {Array.<gis.osm.WayChain>} */ ([]);
 
 	wayList=this.list;
 	wayCount=this.count;
@@ -173,7 +179,7 @@ gis.osm.WaySet.prototype.linkChains=function(profileSet) {
 				if(pos!=other.ptStart && pos!=other.ptList.length-1) continue;
 
 				// Attempt to match way profiles.
-				profile=profileSet.matchWays(way.profile,other.profile);
+				profile=profileSet.matchWays(way.profile,other.profile,false);
 				if(profile) {
 					// Ways are compatible, add them to the same chain or merge existing chains.
 					if(way.chain) {
@@ -215,6 +221,8 @@ gis.osm.WaySet.prototype.optimize=function() {
 	var wayList;
 	var wayNum,wayCount;
 	var way;
+	var otherWayList;
+	var otherNum,otherCount;
 	var ptList;
 	var ptNum,ptCount;
 	var nodeCount;
@@ -296,8 +304,10 @@ gis.osm.WaySet.prototype.optimize=function() {
   * @param {number} maxDist
   * @param {number} runId
   * @param {gis.osm.Node} newNode
-  * @param {gis.osm.ProfileSet} profileSet */
+  * @param {gis.osm.ProfileSet} profileSet
+  * @return {number} */
 gis.osm.WaySet.prototype.walk=function(node,maxDist,runId,newNode,profileSet) {
+	/** @type {Array.<{way:gis.osm.Way,pos:number,dist:number}>} */
 	var fifo;
 	var posIn,posOut;
 	var way;
@@ -312,10 +322,13 @@ gis.osm.WaySet.prototype.walk=function(node,maxDist,runId,newNode,profileSet) {
 	var wayNum,wayCount;
 	var nodeCount;
 
-	/** @param {gis.osm.Node} node */
+	/** @param {gis.osm.Node} node
+	  * @param {number} dist
+	  * @param {gis.osm.WayProfile} profile */
 	function getWays(node,dist,profile) {
 		var way;
 		var pos;
+		var item;
 
 		posList=node.posList;
 		wayList=node.wayList;
@@ -347,7 +360,7 @@ gis.osm.WaySet.prototype.walk=function(node,maxDist,runId,newNode,profileSet) {
 
 	nodeCount=0;
 
-	fifo=[];
+	fifo=/** @type {Array.<{way:gis.osm.Way,pos:number,dist:number}>} */ ([]);
 	posOut=0;
 	posIn=0;
 
@@ -369,7 +382,7 @@ gis.osm.WaySet.prototype.walk=function(node,maxDist,runId,newNode,profileSet) {
 			dist=distEnter+distAlong-way.distList[ptNum];
 			if(dist>maxDist) break;
 
-if(typeof(pt)=='undefined') {console.log(ptList);console.log(pos+' '+ptNum+' '+ptCount);}
+//if(typeof(pt)=='undefined') {console.log(ptList);console.log(pos+' '+ptNum+' '+ptCount);}
 			if(typeof(pt)=='number') {
 				if(newNode) ptList[ptNum]=0;
 if(pt) nodeCount++;
@@ -382,7 +395,7 @@ if(pt) nodeCount++;
 			dist=distEnter+way.distList[ptNum]-distAlong;
 			if(dist>maxDist) break;
 
-if(typeof(pt)=='undefined') {console.log(ptList);console.log(pos+' '+ptNum+' '+ptCount);}
+//if(typeof(pt)=='undefined') {console.log(ptList);console.log(pos+' '+ptNum+' '+ptCount);}
 			if(typeof(pt)=='number') {
 				if(newNode) ptList[ptNum]=0;
 if(pt) nodeCount++;
@@ -409,8 +422,8 @@ gis.osm.WaySet.prototype.cluster=function(maxDist,profileSet) {
 	var nodeNum,nodeCount;
 	var node;
 
-	sizeList=[];
-	nodeList=[];
+	sizeList=/** @type {Array.<number>} */ ([]);
+	nodeList=/** @type {Array.<gis.osm.Node>} */ ([]);
 	nodeCount=0;
 
 	wayList=this.list;
@@ -439,9 +452,7 @@ gis.osm.WaySet.prototype.cluster=function(maxDist,profileSet) {
 
 	for(nodeNum=0;nodeNum<nodeCount;nodeNum++) {
 		node=nodeList[nodeNum];
-//102867-102882
-		if(sizeList[node.iterId]>1) foo=this.walk(node,maxDist,this.runId++,node,profileSet);
-//if(node.iterId>=102867 && node.iterId<=102882) console.log(sizeList[node.iterId]+' '+foo);
+		if(sizeList[node.iterId]>1) this.walk(node,maxDist,this.runId++,node,profileSet);
 		node.iterId=0;
 	}
 
@@ -481,8 +492,8 @@ gis.osm.WaySet.prototype.getGrouped=function(groupSize) {
 	var lat,lon;
 	var key;
 
-	groupTbl={};
-	groupList=[];
+	groupTbl=/** @type {Object.<string,Array.<gis.osm.Way>>} */ ({});
+	groupList=/** @type {Array.<Array.<gis.osm.Way>>} */ ([]);
 
 	wayList=this.list;
 	wayCount=this.count;
@@ -511,9 +522,11 @@ gis.osm.WaySet.prototype.getGrouped=function(groupSize) {
 	// Sort nearby ways by name so delta encoded references to name list would be shorter.
 	groupCount=groupList.length;
 	for(groupNum=0;groupNum<groupCount;groupNum++) {
-		/** @param {gis.osm.Way} a
-		  * @param {gis.osm.Way} b */
-		groupList[groupNum].sort(function(a,b) {return(a.name-b.name);});
+		groupList[groupNum].sort(
+			/** @param {gis.osm.Way} a
+			  * @param {gis.osm.Way} b */
+			function(a,b) {return(a.name-b.name);}
+		);
 	}
 
 	return(Array.prototype.concat.apply([],groupList));
@@ -564,6 +577,9 @@ gis.osm.WaySet.prototype.simplify=function(errNamed,errOther) {
 		else way.simplify(errOther);
 	}
 };
+
+/** @typedef {{detail:number,tileSize:number,roundOff:number,tileOff:number,lat:number,lon:number,exportId:number,tileCount:number,newCount:number,hitCount:number,missCount:number,hdrLen:number,newLen:number,hitLen:number,missLen:number}} */
+gis.osm.WaySet.ExportState;
 
 /** Compress ways into a stream.
   * @param {gis.io.PackStream} stream
@@ -647,11 +663,14 @@ gis.osm.WaySet.prototype.exportPack=function(stream,nameSet) {
 	console.log(state.tileCount+' tiles, '+state.newCount+' new ('+(state.newLen/state.newCount)+'), '+state.hitCount+' hits ('+(state.hitLen/state.hitCount)+'), '+state.missCount+' misses ('+(state.missLen/state.missCount)+').');
 };
 
+/** @typedef {{detail:number,tileSize:number,roundOff:number,tileOff:number,nameId:number,lat:number,lon:number,tileCount:number,newCount:number,hitCount:number,missCount:number}} */
+gis.osm.WaySet.ImportState;
+
 /** Decompress ways from a stream.
   * @param {gis.io.PackStream} stream
   * @param {gis.osm.NodeSet} nodeSet
   * @param {gis.osm.ProfileSet} profileSet
-  * @param {gis.osm.NameSet} nameSet */
+  * @param {gis.enc.NameSet} nameSet */
 gis.osm.WaySet.prototype.importPack=function(stream,nodeSet,profileSet,nameSet) {
 	var wayNum,wayCount;
 	var way;
@@ -699,8 +718,6 @@ gis.osm.WaySet.prototype.importPack=function(stream,nodeSet,profileSet,nameSet) 
 		way=this.createWay();
 		way.importPack(stream,importTbl,nodeSet,state,profileSet,null);
 	}
-
-	console.log(state.tileCount+' tiles, '+state.newCount+' new ('+(state.newLen/state.newCount)+'), '+state.hitCount+' hits ('+(state.hitLen/state.hitCount)+'), '+state.missCount+' misses ('+(state.missLen/state.missCount)+').');
 };
 
 /** @param {function(string)} write */
@@ -761,9 +778,10 @@ gis.osm.WaySet.prototype.exportKML=function(write) {
 	write(txt);
 };
 
-/** @param {function(string)} write */
+/** @param {function(string)} write
+  * @param {gis.osm.ProfileSet} profileSet */
 gis.osm.WaySet.prototype.exportOSM=function(write,profileSet) {
-	var nodeId,wayId;
+	var nodeId,wayId,id;
 	var wayList;
 	var wayNum,wayCount;
 	var way;
@@ -794,17 +812,6 @@ gis.osm.WaySet.prototype.exportOSM=function(write,profileSet) {
 
 			if(typeof(pt)=='number') deg=gis.MU.ll.fromNum(pt).toDeg();
 			else if(pt.iterId) {
-// Debug lane merging.
-if(way.nearWayList && way.nearWayList[ptNum]) {
-/*	pt=way.nearWayList[ptNum].ptList[~~way.nearPosList[ptNum]];
-
-	if(typeof(pt)=='number') deg=gis.MU.ll.fromNum(pt).toDeg();
-	else deg=pt.ll.toDeg();
-
-deg=new gis.MU(way.nearLatList[ptNum],way.nearLonList[ptNum]).toDeg();
-	txt+='<node id="'+nodeId+'" lat="'+deg.llat+'" lon="'+deg.llon+'" version="1" />\n';
-*///	nodeId++;
-}
 				continue;
 			} else {
 				deg=pt.ll.toDeg();
@@ -813,18 +820,6 @@ deg=new gis.MU(way.nearLatList[ptNum],way.nearLonList[ptNum]).toDeg();
 
 			txt+='<node id="'+nodeId+'" lat="'+deg.llat+'" lon="'+deg.llon+'" version="1" />\n';
 			nodeId++;
-
-// Debug lane merging.
-if(way.nearWayList && way.nearWayList[ptNum]) {
-/*	pt=way.nearWayList[ptNum].ptList[~~way.nearPosList[ptNum]];
-
-	if(typeof(pt)=='number') deg=gis.MU.ll.fromNum(pt).toDeg();
-	else deg=pt.ll.toDeg();
-
-deg=new gis.MU(way.nearLatList[ptNum],way.nearLonList[ptNum]).toDeg();
-	txt+='<node id="'+nodeId+'" lat="'+deg.llat+'" lon="'+deg.llon+'" version="1" />\n';
-*///	nodeId++;
-}
 		}
 		write(txt);
 	}
@@ -850,25 +845,6 @@ deg=new gis.MU(way.nearLatList[ptNum],way.nearLonList[ptNum]).toDeg();
 			}
 
 			txt+='<nd ref="'+id+'" />\n';
-
-// Debug lane merging.
-if(way.nearWayList && way.nearWayList[ptNum]) {
-/*	if(way.debug && way.debug[ptNum]) {
-		txt+='<nd ref="'+nodeId+'" />\n';
-		txt+='<nd ref="'+id+'" />\n';
-	}
-*///	nodeId++;
-}
-/*
-// Debug lane merging.
-if(way.nearWayList && way.nearWayList[ptNum]) {
-//	txt+='<nd ref="'+(nodeId++)+'" />\n';
-	txt+='<nd ref="'+id+'" />\n';
-	nodeId++;
-} else {
-	txt+='<nd ref="'+id+'" />\n';
-}
-*/
 		}
 		if(way.name) txt+='<tag k="name" v="'+way.name+'" />\n';
 		txt+=profileSet.exportOSM(way.profile);
@@ -911,16 +887,11 @@ gis.osm.WaySet.prototype.clearMarks=function() {
 
 gis.osm.WaySet.prototype.prepareTree=function() {
 	var tree;
+	var wayList;
+	var wayNum,wayCount;
+	var way;
 
 	tree=new gis.osm.QuadTree(new gis.geom.BB(0,0,gis.MU.range,gis.MU.range));
-
-/*
-var node1,node2;
-mapSet.nodeSet.insertCoord(-1,new gis.Deg(60.168,24.930).toMU());
-mapSet.nodeSet.insertCoord(-2,new gis.Deg(60.179,24.951).toMU());
-way=mapSet.waySet.insertNodes([-1,-2],mapSet.profileSet.wayProfileList[0],'',mapSet.nodeSet);
-way.debug=true;
-*/
 
 	wayList=this.list;
 	wayCount=wayList.length;
@@ -943,7 +914,9 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 	var tree;
 	var wayList;
 	var wayNum,wayCount;
-	var way,other;
+	/** @type {gis.osm.Way} */
+	var way;
+	var other;
 	var bb;
 	var off;
 	var tile;
@@ -961,6 +934,10 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 	wayList=this.list;
 	wayCount=wayList.length;
 
+	// Initialize variables to keep Closure Compiler happy.
+	lat=0;latNext=0;
+	lon=0;lonNext=0;
+
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		way=wayList[wayNum];
 		if(way.deleted || way.name) continue;
@@ -968,9 +945,6 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 		bb=way.getBB();
 		way.nearWayList=[];
 		way.nearPosList=[];
-// Debug lane merging.
-way.nearLatList=[];
-way.nearLonList=[];
 
 		off=maxDist/gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1));  // Adjust scale for Mercator distortion.
 		// Look for nearby ways in the quadtree as far from the root as possible for speed.
@@ -999,10 +973,13 @@ way.nearLonList=[];
 					lonPrev=lon;
 				}
 
-				near=tree.findWay(lat,lon,'',maxDist,tile,latNext-latPrev,lonNext-lonPrev,angleWeight,function(other) {
-					// Match unnamed ways only to named ways on the same layer (tunnel/bridge etc.)
-					return(other.name && other.profile.matchLayer(way.profile));
-				});
+				near=tree.findWay(lat,lon,'',maxDist,tile,latNext-latPrev,lonNext-lonPrev,angleWeight,
+					/** @param {gis.osm.Way} other */
+					function(other) {
+						// Match unnamed ways only to named ways on the same layer (tunnel/bridge etc.)
+						return(other.name && other.profile.matchLayer(way.profile));
+					}
+				);
 				other=near.way;
 
 				if(other) {
@@ -1024,10 +1001,6 @@ way.nearLonList=[];
 
 					way.nearWayList[ptNumPrev]=other;
 					way.nearPosList[ptNumPrev]=pos+offset;
-
-// Debug lane merging.
-way.nearLatList[ptNumPrev]=near.lat;
-way.nearLonList[ptNumPrev]=near.lon;
 				}
 			}
 
@@ -1039,10 +1012,11 @@ way.nearLonList[ptNumPrev]=near.lon;
 
 			validCount++;
 		}
-		if(!(wayNum%100)) console.log(wayNum);
+		if(!(wayNum%100)) console.log(''+wayNum);
 	}
 };
 
+/** @param {gis.osm.NodeSet} nodeSet */
 gis.osm.WaySet.prototype.mergeLanes=function(nodeSet) {
 	var wayList;
 	var wayNum,wayCount;
@@ -1107,12 +1081,14 @@ if(1) {
 					other.extraPosList.push(pos);
 					other.extraPtList.push(pt);
 					ptPrev.important=true;
+/*
 } else {
-ptList[ptNum].removeWay(way.ptNum);
+ptList[ptNum].removeWay(way,ptNum);
 ptList[ptNum]=0;
 posPrev=pos;
 dirPrev=dir;
 continue;
+*/
 }
 				} else {
 					ptList[ptNum]=0;
@@ -1145,7 +1121,7 @@ continue;
 		}
 	}
 
-	extraList=[];
+	extraList=/** @type {Array.<{pos:number,pt:(number|gis.osm.Node)}>} */ ([]);
 
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		way=wayList[wayNum];
@@ -1158,7 +1134,11 @@ continue;
 			extraList[extraNum]={pos:way.extraPosList[extraNum],pt:way.extraPtList[extraNum]};
 		}
 
-		extraList.sort(function(a,b) {return(a.pos-b.pos);});
+		extraList.sort(
+			/** @param {{pos:number,pt:(number|gis.osm.Node)}} a
+			  * @param {{pos:number,pt:(number|gis.osm.Node)}} b */
+			function(a,b) {return(a.pos-b.pos);}
+		);
 
 		for(extraNum=0;extraNum<extraCount;extraNum++) {
 			way.extraPosList[extraNum]=extraList[extraNum].pos;
