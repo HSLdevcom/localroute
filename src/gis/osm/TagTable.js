@@ -87,6 +87,12 @@ gis.osm.TagTable.prototype.getString=function(key) {
 };
 
 /** @param {string} key
+  * @param {string} val */
+gis.osm.TagTable.prototype.match=function(key,val) {
+	return(this.tbl[key] && gis.Q.trim(this.tbl[key].toLowerCase())==val);
+};
+
+/** @param {string} key
   * @param {number|null} miss
   * @param {number|null} err
   * @return {number|null} */

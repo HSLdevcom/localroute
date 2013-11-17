@@ -38,6 +38,7 @@
 goog.provide('gis.osm.Node');
 goog.require('gis.Obj');
 goog.require('gis.MU');
+goog.require('gis.osm.Meta');
 
 /** @constructor
   * @param {gis.MU} ll */
@@ -55,6 +56,8 @@ gis.osm.Node=function(ll) {
 	this.tagTbl;
 	/** @type {boolean} */
 	this.important;
+	/** @type {gis.osm.Meta} */
+	this.meta;
 
 	/** @type {gis.osm.Node} */
 	this.replacement;

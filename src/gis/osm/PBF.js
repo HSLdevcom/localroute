@@ -64,8 +64,9 @@ goog.require('gis.Deg');
 goog.require('gis.io.PackStream');
 goog.require('gis.osm.NodeSet');
 goog.require('gis.osm.Node');
-goog.require('gis.osm.WaySet');
+goog.require('gis.osm.MetaSet');
 goog.require('gis.osm.ProfileSet');
+goog.require('gis.osm.WaySet');
 goog.require('gis.osm.TagTable');
 goog.require('gis.bin.OsmDesc');
 
@@ -127,7 +128,7 @@ gis.osm.PBF.prototype.makeKeyTbl=function(txtList,nameList) {
 	txtCount=txtList.length;
 
 	for(txtNum=0;txtNum<txtCount;txtNum++) {
-		txt=txtList[txtNum].toLowerCase();
+		txt=gis.Q.trim(txtList[txtNum].toLowerCase());
 		if(keepTxtTbl[txt]) keepKeyTbl[txtNum]=true;
 	}
 
@@ -138,15 +139,16 @@ gis.osm.PBF.prototype.makeKeyTbl=function(txtList,nameList) {
   * @param {Primitive} dense
   * @param {Array.<string>} txtList
   * @param {PrimitiveBlock} prim
-  * @param {gis.osm.WaySet} waySet */
-gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet) {
+  * @param {gis.osm.WaySet} waySet
+  * @param {gis.osm.NodeSet} nodeSet
+  * @param {gis.osm.MetaSet} metaSet */
+gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet,nodeSet,metaSet) {
 	var grid;
 	var gridMul,mul,testMul,testAdd;
 	var id;
 	var latList,lonList;
 	var lat,lon;
 	var ll;
-	var nodeSet;
 	var nodeIdList;
 	var nodeNum,nodeCount;
 	var node;
@@ -158,10 +160,10 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet) {
 	var tagNum,tagCount,tagFirst;
 	var useful;
 	var key,val;
+	var meta;
 
 	grid=this.maskGrid;
 	gridMul=gis.osm.PBF.gridMul;
-	nodeSet=this.mapSet.nodeSet;
 
 	mul=prim.granularity/100/10000000;
 	testMul=gridMul*mul;
@@ -209,10 +211,19 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet) {
 	useful=false;
 	tagTbl=null;
 
-	for(tagNum=0;tagNum<tagCount;) {
+	// This loop reads at least one past the end of the array, just so code for handling the end of a node wouldn't need to be copied also after the loop.
+	for(tagNum=0;tagNum<=tagCount;) {
 		key=+tagList[tagNum++];
 		if(!key) {
-			// Key ID 0 means continue to next node.
+			// Key ID 0 means continue to next node. Check if the previous node has useful tags to parse.
+			if(useful) {
+				meta=metaSet.parseNode(tagTbl);
+				if(meta) {
+					node=nodeSet.promote(nodeIdList[nodeNum],waySet,true);
+					node.meta=meta;
+					meta.nodeList.push(node);
+				}
+			}
 			tagFirst=tagNum;
 			nodeNum++;
 			useful=false;
@@ -225,9 +236,6 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet) {
 			useful=true;
 			tagNum=tagFirst;
 			tagTbl=new gis.osm.TagTable();
-
-			node=nodeSet.promote(nodeIdList[nodeNum],waySet,true);
-			node.tagTbl=tagTbl;
 		} else tagNum++;
 	}
 };
@@ -264,7 +272,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 	// For profile key compression in memory.
 	stream=new gis.io.PackStream(null,null);
 
-	// Create table with IDs of interesting key names that indicate useful nodes.
+	// Create table with IDs of interesting key names that indicate useful ways.
 	keepKeyTbl=this.makeKeyTbl(txtList,'amenity highway leisure public_transport railway shop sport tourism'.split(' '));
 
 	descCount=descList.length;
@@ -282,8 +290,8 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 
 		tagTbl=new gis.osm.TagTable();
 		for(tagNum=0;tagNum<tagCount;tagNum++) {
-			key=desc['keys'][tagNum];
-			val=desc['vals'][tagNum];
+			key=+desc['keys'][tagNum];
+			val=+desc['vals'][tagNum];
 			tagTbl.insert(txtList[key],txtList[val]);
 		}
 
@@ -313,7 +321,6 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 					way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
 					if(prevWay) prevWay.next=way;
 					else wayTbl[+desc['id']]=way;
-//console.log(desc['id']);
 				}
 
 				nodeList=[];
@@ -331,7 +338,6 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 				way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
 				if(prevWay) prevWay.next=way;
 				else wayTbl[+desc['id']]=way;
-//console.log(desc['id']);
 			}
 		}
 	}
@@ -341,18 +347,24 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
   * @param {Array.<string>} txtList
   * @param {{granularity:number,stringtable:{s:Array.<Buffer>}}} prim
   * @param {gis.osm.WaySet} waySet
-  * @param {gis.osm.NodeSet} nodeSet */
-gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet) {
+  * @param {gis.osm.NodeSet} nodeSet
+  * @param {gis.osm.MetaSet} metaSet */
+gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,metaSet) {
 	var nodeTbl;
+	var node;
 	var wayTbl;
+	var way;
 	var descNum,descCount;
 	var desc;
 	var typeList;
 	var idList;
 	var idNum,idCount;
 	var id;
-	var nodeCount;
-	var wayCount;
+	var roleIdList;
+	var roleList;
+	var memberList;
+	var memberCount;
+	var typeKeyTbl,keepTypeTbl;
 	var tagTbl;
 	var tagNum,tagCount;
 	var key,val;
@@ -361,84 +373,66 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet) {
 	nodeTbl=nodeSet.tbl;
 	wayTbl=waySet.tbl;
 
-	nodeCount=0;
-	wayCount=0;
+	if(!txtList.length) this.decodeTxtList(txtList,prim.stringtable.s);
+
+	// Create table with IDs of interesting type names that indicate useful relations.
+	keepTypeTbl=this.makeKeyTbl(txtList,'route route_master access enforcement restriction associatedstreet bridge tunnel site public_transport'.split(' '));
+	typeKeyTbl=this.makeKeyTbl(txtList,['type']);
 
 	descCount=descList.length;
 	for(descNum=0;descNum<descCount;descNum++) {
 		desc=descList[descNum];
 		if(!desc['keys']) continue;
 
-		typeList=desc['types'];
+		tagCount=desc['keys'].length;
+		for(tagNum=0;tagNum<tagCount;tagNum++) {
+			if(typeKeyTbl[+desc['keys'][tagNum]] && keepTypeTbl[+desc['vals'][tagNum]]) break;
+		}
 
+		// Ignore the relation if its type isn't interesting.
+		if(tagNum==tagCount) continue;
+
+		roleList=[];
+		memberList=[];
+		memberCount=0;
+		typeList=desc['types'];
+		roleIdList=desc['rolesSid'];
 		idList=desc['memids'];
+
+		if(!typeList || !roleIdList || !idList) continue;
+
 		idCount=idList.length;
 		id=0;
 
 		for(idNum=0;idNum<idCount;idNum++) {
 			id+=+idList[idNum];
-			if(typeList[idNum]=='NODE' && nodeTbl[id]) {
-				nodeCount++;
-//				console.log(id);
-			}
-
-			if(typeList[idNum]=='WAY' && wayTbl[id]) {
-				wayCount++;
-//				console.log(id);
+			if(typeList[idNum]=='NODE') {
+				node=nodeTbl[id];
+				if(node) {
+					roleList[memberCount]='n'+txtList[+roleIdList[idNum]];
+					memberList[memberCount++]=node;
+				}
+			} else if(typeList[idNum]=='WAY') {
+				way=wayTbl[id];
+				if(way) {
+					roleList[memberCount]='w'+txtList[+roleIdList[idNum]];
+					memberList[memberCount++]=way;
+				}
 			}
 		}
 
-		tagCount=desc['keys'].length;
-//		for(tagNum=0;tagNum<tagCount;tagNum++) {
-//			if(keepKeyTbl[desc['keys'][tagNum]]) break;
-//		}
-
-		// Ignore the way if no interesting keys were found.
-//		if(tagNum==tagCount) continue;
+		// Ignore the relation if no members are within grid to import.
+		if(!memberCount) continue;
 
 		tagTbl=new gis.osm.TagTable();
 		for(tagNum=0;tagNum<tagCount;tagNum++) {
-			key=desc['keys'][tagNum];
-			val=desc['vals'][tagNum];
+			key=+desc['keys'][tagNum];
+			val=+desc['vals'][tagNum];
 			tagTbl.insert(txtList[key],txtList[val]);
 		}
 
-		type=tagTbl.getString('type');
-		if(!type) continue;
-		type=type.toLowerCase();
-/*
-		if(type=='route' && tagTbl['route']) {
-//console.log(tagTbl);
-		} else if(type=='route_master' && tagTbl['route_master']) {
-//console.log(tagTbl);
-		} else if(type=='access') {
-//console.log(tagTbl);
-		} else if(type=='boundary') {
-//console.log(tagTbl);
-		} else if(type=='enforcement') {
-//console.log(tagTbl);
-		} else if(type=='restriction') {
-//console.log(tagTbl);
-		} else if(type=='multipolygon') {
-//console.log(tagTbl);
-		} else if(type=='destinationsign') {
-//console.log(tagTbl);
-		} else if(type=='associatedstreet') {
-//console.log(tagTbl);
-		} else if(type=='surveillance') {
-//console.log(tagTbl);
-		} else if(type=='bridge') {
-//console.log(tagTbl);
-		} else if(type=='tunnel') {
-//console.log(tagTbl);
-		} else if(type=='site' && tagTbl['site']=='bus_stop') {
-//console.log(tagTbl);
-		} else if(type=='public_transport' && tagTbl['public_transport']=='stop_area') {
-//console.log(tagTbl);
-		} else console.log(tagTbl);
-*/
+		metaSet.parseRel(tagTbl,roleList,memberList);
 	}
-	console.log('Relations refer to '+nodeCount+' nodes and '+wayCount+' ways.');
 };
 
 /** @param {gis.Deg} sw
@@ -452,7 +446,7 @@ gis.osm.PBF.prototype.addMask=function(sw,ne) {
 	gridMul=gis.osm.PBF.gridMul;
 	grid=this.maskGrid;
 	if(!grid) {
-		grid={}
+		grid={};
 		this.maskGrid=grid;
 	}
 
@@ -471,6 +465,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	/** @type {gis.osm.PBF} */
 	var self=this;
 	var nodeSet;
+	var metaSet;
 	var profileSet;
 	var waySet;
 	var fd;
@@ -479,6 +474,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	var hdrBuf;
 	/** @type {HdrParser} */
 	var hdrParser;
+	var hdr;
 	/** @type {Buffer} */
 	var blobBuf;
 	/** @type {BlobParser} */
@@ -503,9 +499,9 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 		for(groupNum=0;groupNum<groupCount;groupNum++) {
 			group=groupList[groupNum];
 
-			if(group['dense']) self.parseDense(/** @type {Primitive} */ (group['dense']),txtList,prim,waySet);
+			if(group['dense']) self.parseDense(/** @type {Primitive} */ (group['dense']),txtList,prim,waySet,nodeSet,metaSet);
 			if(group['ways']) self.parseWays(/** @type {PrimitiveList} */ (group['ways']),txtList,prim,waySet,nodeSet);
-			if(group['relations']) self.parseRels(/** @type {PrimitiveList} */ (group['relations']),txtList,prim,waySet,nodeSet);
+			if(group['relations']) self.parseRels(/** @type {PrimitiveList} */ (group['relations']),txtList,prim,waySet,nodeSet,metaSet);
 		}
 
 		readBlock();
@@ -537,7 +533,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 
 				if(zBuf) {
 					zlib.inflate(zBuf,
-					/** @param {Buffer} data */
+						/** @param {Buffer} data */
 						function(err,data) {
 							if(!data) return;
 							parseBlock(data);
@@ -554,10 +550,10 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	}
 
 	nodeSet=this.mapSet.nodeSet;
+	metaSet=this.mapSet.metaSet;
 	profileSet=this.mapSet.profileSet;
 	waySet=this.mapSet.waySet;
 
-	// To create the file run: protoc -oosm.desc fileformat.proto osmformat.proto
 	schema=new Schema(new Buffer(gis.bin.OsmDesc,'base64'));
 
 	hdrParser=/** @type {HdrParser} */ (schema['BlockHeader']);
@@ -568,7 +564,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	blobBuf=new Buffer(gis.osm.PBF.blobMax);
 
 	// Mark grid cells to convert.
-	this.addMask(new gis.Deg(60.1,24.5),new gis.Deg(60.4,25.2));
+//	this.addMask(new gis.Deg(60.1,24.5),new gis.Deg(60.4,25.2));
 
 	fd=fs.openSync(path,'r');
 	readBlock();

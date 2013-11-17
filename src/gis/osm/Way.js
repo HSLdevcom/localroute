@@ -69,7 +69,7 @@ gis.osm.Way=function() {
 	this.important;
 
 	/** @type {number} */
-	this.runId=0;
+	this.iterId=0;
 	/** @type {Array.<number>} */
 	this.costList;
 
@@ -89,6 +89,16 @@ gis.osm.Way=function() {
 
 /** @typedef {{way:gis.osm.Way,sqDist:number,pos:number,posNext:number}} */
 gis.osm.Way.Near;
+
+/** @enum {number} */
+gis.osm.Way.Src={
+	HDR:0,
+	NEW1:1,
+	NEW:2,
+	MISS:3,
+	HIT:4,
+	REF:5
+};
 
 /** Convert point at pos represented as a number into a node object.
   * @param {number} pos
@@ -331,11 +341,11 @@ gis.osm.Way.prototype.reverse=function() {
 /** @param {gis.io.PackStream} stream
   * @param {Object.<string,number>} exportTbl
   * @param {gis.osm.WaySet.ExportState} state
+  * @param {Array.<number>} outList
   * @param {number} nameId */
-gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
+gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,outList) {
 	var lat,latPrev,dlat,dlat2,latExtra,keyLat,keyLatPrev;
 	var lon,lonPrev,dlon,dlon2,lonExtra,keyLon,keyLonPrev;
-	var hdr,pair;
 	var ptList;
 	var ptNum,ptCount,ptStart,dropCount,outCount;
 	var pt;
@@ -345,21 +355,15 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 	var roundOff,tileOff;
 	var key;
 	var quad;
-	var outList;
 	var off;
 
 	var extraPosList,extraPtList;
 	var extraNum,extraCount;
 	var extraPos,extraScale;
 
-	outList=[];
-	hdr=[];
-	pair=[];
-
 	ptList=this.ptList;
 	ptCount=ptList.length;
 	ptStart=this.ptStart;
-//	dropCount=ptStart;
 
 	extraPosList=this.extraPosList;
 	if(extraPosList) {
@@ -367,17 +371,6 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 		extraCount=extraPosList.length;
 		extraNum=0;
 	}
-
-//	for(ptNum=ptStart;ptNum<ptCount;ptNum++) {
-//		if(!ptList[ptNum]) dropCount++;
-//	}
-
-//	hdr[0]=ptCount-dropCount;
-//	hdr[1]=this.profile.id;
-	outList=[0,this.profile.id];
-//	if(nameId!==null) hdr[2]=nameId;
-	if(nameId!==null) outList[2]=nameId;
-//	state.hdrLen+=stream.writeLong(hdr);
 
 	detail=state.detail;
 	tileSize=state.tileSize;
@@ -416,8 +409,8 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 		if(!node || !node.iterId) {
 //			pair[0]=gis.Q.fromSigned(lat-(latPrev+dlat))*2+1;
 //			pair[1]=gis.Q.fromSigned(lon-(lonPrev+dlon))*2+!!node;
-			outList.push(gis.Q.fromSigned(lat-(latPrev+dlat))*2+1);
-			outList.push(gis.Q.fromSigned(lon-(lonPrev+dlon))*2+!!node);
+			// New point, have to store lat/lon deltas.
+			outList.push(gis.Q.fromSigned(lat-(latPrev+dlat))*2+1,gis.Q.fromSigned(lon-(lonPrev+dlon))*2+!!node);
 
 //			state.newLen+=stream.writeLong(pair);
 			state.newCount++;
@@ -455,11 +448,13 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,nameId) {
 //				state.missLen+=stream.writeLong([(state.exportId-node.iterId-1)*10+8]);
 				// The following leaves code 8 unused.
 //				state.missLen+=stream.writeLong([(state.exportId-node.iterId)*10+8]);
+				// Cache miss, store node ID.
 				outList.push((state.exportId-node.iterId)*10+8);
 				state.missCount++;
 			} else {
 //				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey-1)*10+quad*2]);
 //				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey)*10+quad*2]);
+				// Cache hit, store node index within nearby rectangular area.
 				// The following leaves codes 0, 2, 4 and 6 unused.
 				outList.push((exportTbl[key]-node.exportKey)*10+quad*2);
 				state.hitCount++;
@@ -501,8 +496,8 @@ node.ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 		}
 	}
 
-outList[0]=outCount;
-stream.writeLong(outList);
+	outList[0]=outCount;
+	stream.writeLong(outList);
 
 	state.lat=lat;
 	state.lon=lon;
@@ -513,8 +508,9 @@ stream.writeLong(outList);
   * @param {gis.osm.NodeSet} nodeSet
   * @param {gis.osm.WaySet.ImportState} state
   * @param {gis.osm.ProfileSet} profileSet
-  * @param {gis.enc.NameSet} nameSet */
-gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profileSet,nameSet) {
+  * @param {gis.enc.NameSet} nameSet
+  * @param {boolean} getStats Set to true to get compression statistics. */
+gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profileSet,nameSet,getStats) {
 	var ptList;
 	var ptNum,ptCount;
 	var lat,dlat,latExtra;
@@ -530,6 +526,11 @@ gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profile
 	var roundOff,tileOff;
 	var dec;
 	var way;
+	var src;
+	var pos;
+
+	pos=stream.pos;
+	src=gis.osm.Way.Src.HDR;
 
 	dec=/** @type {Array.<number>} */ ([]);
 	if(nameSet) {
@@ -556,10 +557,18 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 	node=null;
 
 	for(ptNum=0;ptNum<ptCount;ptNum++) {
+		if(getStats) {
+			state.typeLen[src]+=stream.pos-pos;
+			state.typeCount[src]++;
+			pos=stream.pos;
+		}
+
 		stream.readLong(dec,1);
 		code=dec[0];
 
 		if(code&1) {
+			src=ptNum?gis.osm.Way.Src.NEW:gis.osm.Way.Src.NEW1;
+
 			if(node) {
 				ptList[ptNum-1]=node;
 				node.addWay(this,ptNum-1);
@@ -576,8 +585,6 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 				dlat=0;
 				dlon=0;
 			}
-
-			state.newCount++;
 
 			ll=new gis.MU((lat<<detail)+roundOff,(lon<<detail)+roundOff);
 			if(dec[0]&1) {
@@ -596,6 +603,7 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 				continue;
 			}
 		} else if(code==8) {
+			src=gis.osm.Way.Src.REF;
 //lat2=lat;
 //lon2=lon;
 //console.log('FOO '+lat+' '+lon+' '+ll.llat+' '+ll.llon);
@@ -642,6 +650,8 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 			off=~~(code/10);
 
 			if(quad<4) {
+				src=gis.osm.Way.Src.HIT;
+
 				keyLat=((lat+tileOff)>>tileSize)-(quad&1);
 				keyLon=((lon+tileOff)>>tileSize)-(quad>>1);
 
@@ -650,11 +660,11 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 
 //				node=group[group.length-off-1];
 				node=group[group.length-off];
-				state.hitCount++;
 			} else {
+				src=gis.osm.Way.Src.MISS;
+
 //				node=nodeList[nodeSet.count-off-1];
 				node=nodeList[nodeSet.count-off];
-				state.missCount++;
 			}
 
 			dlat=(node.ll.llat>>detail)-lat;
@@ -669,10 +679,15 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 		}
 	}
 
-			if(node) {
-				ptList[ptNum-1]=node;
-				node.addWay(this,ptNum-1);
-			}
+	if(node) {
+		ptList[ptNum-1]=node;
+		node.addWay(this,ptNum-1);
+	}
+
+	if(getStats) {
+		state.typeLen[src]+=stream.pos-pos;
+		state.typeCount[src]++;
+	}
 
 	state.lat=lat;
 	state.lon=lon;

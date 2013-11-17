@@ -35,84 +35,20 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-goog.provide('gis.osm.MapSet');
+goog.provide('gis.osm.Meta');
 goog.require('gis.Obj');
-goog.require('gis.io.PackStream');
-goog.require('gis.enc.NameSet');
-goog.require('gis.osm.NodeSet');
-goog.require('gis.osm.MetaSet');
-goog.require('gis.osm.ProfileSet');
-goog.require('gis.osm.WaySet');
 
 /** @constructor */
-gis.osm.MapSet=function() {
-	/** @type {gis.enc.NameSet} */
-	this.nameSet=new gis.enc.NameSet();
-	/** @type {gis.osm.NodeSet} */
-	this.nodeSet=new gis.osm.NodeSet();
-	/** @type {gis.osm.MetaSet} */
-	this.metaSet=new gis.osm.MetaSet();
-	/** @type {gis.osm.ProfileSet} */
-	this.profileSet=new gis.osm.ProfileSet();
-	/** @type {gis.osm.WaySet} */
-	this.waySet=new gis.osm.WaySet();
+gis.osm.Meta=function() {
+	/** @type {Array.<gis.osm.Node>} */
+	this.nodeList=[];
+
+	/** @type {gis.osm.Meta.Type} */
+	this.type;
 };
 
-/** @param {boolean} harder */
-gis.osm.MapSet.prototype.optimize=function(harder) {
-	var profileSet;
-	var waySet;
-
-	profileSet=this.profileSet;
-	waySet=this.waySet;
-
-	if(harder) {
-		waySet.simplify(5,10);
-		waySet.cluster(20,profileSet);
-	}
-
-	waySet.linkChains(profileSet);
-	while(waySet.optimize()) waySet.linkChains(profileSet);
-};
-
-/** @param {gis.io.PackStream} stream */
-gis.osm.MapSet.prototype.exportPack=function(stream) {
-	var nameSet;
-	var profileSet;
-	var waySet;
-
-	nameSet=this.nameSet;
-	profileSet=this.profileSet;
-	waySet=this.waySet;
-
-	profileSet.clearCounts();
-	waySet.markProfiles();
-	profileSet.sortProfiles();
-
-	waySet.getNames(nameSet);
-	nameSet.sortNames();
-console.log(nameSet.list.length+' names');
-	nameSet.exportPack(stream);
-
-	profileSet.exportPack(stream);
-
-	waySet.exportPack(stream,nameSet);
-
-/*
-	for(dataNum=0;dataNum<dataCount;dataNum++) {
-		stream.writeRaw(hdrList[dataNum]);
-		stream.writeRaw(dataList[dataNum]);
-	}
-*/
-};
-
-/** @param {gis.io.PackStream} stream */
-gis.osm.MapSet.prototype.importPack=function(stream) {
-	var nameSet;
-
-	nameSet=this.nameSet;
-
-	nameSet.importPack(stream);
-	this.profileSet.importPack(stream);
-	this.waySet.importPack(stream,this.nodeSet,this.profileSet,nameSet,true);
+/** @enum {number} */
+gis.osm.Meta.Type={
+	NONE:0,
+	STOP:1
 };
