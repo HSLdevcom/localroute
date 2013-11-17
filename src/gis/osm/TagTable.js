@@ -74,10 +74,10 @@ gis.osm.TagTable.boolTbl={
 /** @param {string} key
   * @param {string} val */
 gis.osm.TagTable.prototype.insert=function(key,val) {
-    var lower;
+	var lower;
 
-    lower=gis.Q.trim(key.toLowerCase());
-    if(lower==key || !this.tbl[lower]) this.tbl[lower]=val;
+	lower=gis.Q.trim(key.toLowerCase());
+	if(lower==key || !this.tbl[lower]) this.tbl[lower]=val;
 };
 
 /** @param {string} key

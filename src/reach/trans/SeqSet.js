@@ -17,6 +17,8 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* jshint -W069 */
+
 goog.provide('reach.trans.SeqSet');
 goog.require('reach.trans.StopSet');
 goog.require('reach.trans.Seq');
@@ -82,7 +84,6 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 	var fieldList;
 	var stopList;
 	var stopNum,stopCount;
-	var stop;
 
 	txt=stream.readLine();
 
@@ -149,9 +150,8 @@ reach.trans.SeqSet.prototype.exportPack=function(stream) {
 	var stopList;
 	var stopNum,stopCount;
 	var stop,prevStop;
-	var followerNum,packNum;
+	var packNum;
 	var repLen;
-	var stats;
 	var maxRep;
 
 	maxRep=this.maxRep;
@@ -204,7 +204,7 @@ reach.trans.SeqSet.prototype.exportPack=function(stream) {
 reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 	/** @type {reach.trans.SeqSet} */
 	var self=this;
-	var seqNum,seqCount;
+	var seqCount;
 	var seq;
 	var stopNum,stopCount;
 	var stop,prevStop;

@@ -58,6 +58,8 @@
 	Content in the wiki quoted under Creative Commons Attribution-ShareAlike 2.0 license.
 */
 
+/* jshint -W069 */
+
 goog.provide('gis.osm.PBF');
 goog.require('gis.Obj');
 goog.require('gis.Deg');
@@ -103,7 +105,7 @@ gis.osm.PBF.prototype.decodeTxtList=function(txtList,bufList) {
 	}
 
 	return(txtList);
-}
+};
 
 /** @param {Array.<string>} txtList
   * @param {Array.<string>} nameList
@@ -133,7 +135,7 @@ gis.osm.PBF.prototype.makeKeyTbl=function(txtList,nameList) {
 	}
 
 	return(keepKeyTbl);
-}
+};
 
 /** Parse list of compressed OSM nodes and tags.
   * @param {Primitive} dense
@@ -254,7 +256,6 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 	var nodeList;
 	var nodeCount;
 	var nodeId;
-	var node;
 	var wayTbl;
 	var way,prevWay;
 	var keepKeyTbl;
@@ -368,7 +369,6 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 	var tagTbl;
 	var tagNum,tagCount;
 	var key,val;
-	var type;
 
 	nodeTbl=nodeSet.tbl;
 	wayTbl=waySet.tbl;
@@ -474,14 +474,12 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	var hdrBuf;
 	/** @type {HdrParser} */
 	var hdrParser;
-	var hdr;
 	/** @type {Buffer} */
 	var blobBuf;
 	/** @type {BlobParser} */
 	var blobParser;
 	/** @type {PrimitiveBlockParser} */
 	var primParser;
-	var prim;
 
 	/** @param {Buffer} data */
 	function parseBlock(data) {

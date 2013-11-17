@@ -31,7 +31,7 @@ gis.Q=function() {};
   * @return {number}  */
 gis.Q.toSigned=function(x) {
 	return((x>>>1)^-(x&1));
-}
+};
 
 /** Encode signed integer, compressing to unsigned with least significant bit as sign.
   * In Out
@@ -44,7 +44,7 @@ gis.Q.toSigned=function(x) {
   * @return {number}  */
 gis.Q.fromSigned=function(x) {
 	return((x<<1)^-(x>>>31));
-}
+};
 
 /** Fast fixed point sin, input [0,2pi[ scaled to [0,65536[ and output [-1,1] to [-65536,65536].
   * Adapted from "Fast and accurate sine/cosine" thread at devmaster.net by Nick.
@@ -67,14 +67,14 @@ gis.Q.sin16=function(x) {
 	x=((((x+m^m)*x)>>13)*115+x*397)>>6;
 
 	return(x);
-}
+};
 
 /** Fast fixed point cos, input [0,2pi[ scaled to [0,65536[ and output [-1,1] to [-65536,65536].
   * @param {number} x
   * @return {number}  */
 gis.Q.cos16=function(x) {
 	return(gis.Q.sin16(x+16384));
-}
+};
 
 /** @type {number} Square of a number that definitely fits in the 53-bit integer precision of JavaScript numbers. */
 gis.Q.maxSqr=Math.pow(2,102);
@@ -170,4 +170,4 @@ gis.Q.trim=function(txt) {
 
 	while(re.test(txt.charAt(--pos))) {}
 	return(txt.substr(0,pos+1));
-}
+};

@@ -95,7 +95,6 @@ gis.MU.prototype.offset=function(north,east) {
 gis.MU.getScale=function(lat) {
 	var scale;
 	var f,t;
-	var north,east;
 
 	// Tangent of latitude.
 	t=Math.exp((lat/gis.MU.range*2-1)*Math.PI);

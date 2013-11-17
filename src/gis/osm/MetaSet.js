@@ -76,7 +76,7 @@ gis.osm.MetaSet.prototype.parseNode=function(tagTbl) {
 
 /** @param {gis.osm.TagTable} tagTbl
   * @return {gis.osm.Meta} */
-gis.osm.MetaSet.prototype.parseRel=function(tagTbl) {
+gis.osm.MetaSet.prototype.parseRel=function(tagTbl,roleList,memberList) {
 	var type;
 
 	type=tagTbl.getString('type');

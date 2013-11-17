@@ -17,6 +17,13 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/** @fileoverview
+  * @suppress {reportUnknownTypes} */
+
+/* jshint -W069 */
+/* jshint evil:true */
+/* jshint quotmark:false */
+
 goog.provide('main');
 goog.require('gis.Obj');
 goog.require('gis.util.Opt');
@@ -32,11 +39,10 @@ function init() {
 	var dateSys;
 	var dayCount;
 	var transSet;
+	var mapSet;
 	var gtfs;
 	var opt;
 	var taskList;
-	var transSet;
-	var mapSet;
 	var fd;
 
 	eval("fs=require('fs');");

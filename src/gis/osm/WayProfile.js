@@ -105,7 +105,6 @@ gis.osm.WayProfile.prototype.toKey=function(stream) {
 
 /** @param {gis.io.PackStream} stream */
 gis.osm.WayProfile.prototype.importPack=function(stream) {
-	var optList;
 	var optNum,optCount;
 	var dec;
 	var key,val;

@@ -89,7 +89,7 @@ gis.osm.QuadTree.prototype.insertWay=function(way) {
 
 	tile=this.findEnclosing(way.getBB());
 
-	if(tile.quadList) tile.insertWayBranch(way,-1,0,way.ptList.length-1);
+	if(tile.quadList) {/* TODO */}
 	else tile.insertWayLeaf(way,0,way.ptList.length-1);
 };
 
@@ -118,6 +118,7 @@ gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,d
 	nearest=sentinel;
 	if(name) name=gis.osm.Way.trimName(name);
 
+	/** @return {gis.osm.Way.Near} */
 	function advance() {
 		var quadList;
 		var quadNum;
@@ -162,7 +163,6 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 	var ptNum,ptCount;
 	var pt;
 	var deg;
-	var tile;
 
 	txt='<?xml version="1.0" encoding="utf-8" ?>\n'+
 		'<kml xmlns="http://www.opengis.net/kml/2.2">\n'+
@@ -196,13 +196,7 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 		wayList=tile.wayList;
 		firstList=tile.firstList;
 		lastList=tile.lastList;
-/*
-		debug=false;
-		wayCount=wayList.length;
-		for(wayNum=0;wayNum<wayCount;wayNum++) {
-			if(wayList[wayNum].debug) debug=true;
-		}
-*/
+
 		txt='<Folder>\n'+
 			'<name>'+tile.bb+'</name>\n'+
 			'<Placemark>\n'+
@@ -222,7 +216,6 @@ gis.osm.QuadTree.prototype.exportKML=function(write) {
 
 		for(wayNum=0;wayNum<wayCount;wayNum++) {
 			way=wayList[wayNum];
-if(way.debug) continue;
 
 			txt='<Placemark>\n'+
 				'<name>'+(way.name||'')+'</name>\n'+

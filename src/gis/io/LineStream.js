@@ -47,7 +47,7 @@ gis.inherit(gis.io.LineStream,gis.io.Stream);
 gis.io.LineStream.prototype.readLine=function() {
 	if(this.pos>=this.lineCount) return(null);
 	return(this.lineList[this.pos++]);
-}
+};
 
 /** @param {string} txt */
 gis.io.LineStream.prototype.writeText=function(txt) {

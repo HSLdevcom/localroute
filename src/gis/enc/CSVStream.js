@@ -17,6 +17,8 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* jshint -W069 */
+
 goog.provide('gis.enc.CSVStream');
 
 /** @constructor

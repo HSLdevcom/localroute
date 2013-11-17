@@ -913,8 +913,8 @@ gis.osm.WaySet.prototype.prepareTree=function() {
 	wayCount=wayList.length;
 
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
-    	way=wayList[wayNum];
-    	if(way.deleted) continue;
+		way=wayList[wayNum];
+		if(way.deleted) continue;
 
 	    tree.insertWay(way);
 	}
@@ -941,8 +941,8 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 	var ptNum,ptCount,ptNumPrev;
 	var pt;
 	var ll;
-	var lat,lon,latPrev,lonPrev,latNext,lonNext,dlat,dlon;
-	var near,near2;
+	var lat,lon,latPrev,lonPrev,latNext,lonNext;
+	var near;
 	var pos;
 	var offset;
 
@@ -1037,13 +1037,12 @@ gis.osm.WaySet.prototype.mergeLanes=function(nodeSet) {
 	var wayList;
 	var wayNum,wayCount;
 	var way;
-	var ptList,ptListNew;
+	var ptList;
 	var ptNum,ptCount,ptNumPrev,ptNumLast;
 	var pt,ptPrev;
 	var other,otherPrev;
 	var pos,posPrev;
 	var dir,dirPrev;
-	var offset,offsetPrev;
 	var extraList;
 	var extraNum,extraCount;
 	var len;
@@ -1161,6 +1160,8 @@ continue;
 			way.extraPtList[extraNum]=extraList[extraNum].pt;
 		}
 /*
+		var ptListNew;
+
 		ptListNew=[];
 		ptList=way.ptList;
 		ptCount=ptList.length;

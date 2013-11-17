@@ -17,6 +17,8 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* jshint -W069 */
+
 goog.provide('reach.trans.StopSet');
 goog.require('reach.trans.Stop');
 goog.require('gis.enc.NameSet');
@@ -124,7 +126,7 @@ reach.trans.StopSet.prototype.exportPack=function(stream,nameSet) {
 	var stopList;
 	var stopNum,stopCount;
 	var stop;
-	var ll,lat,lon;
+	var lat,lon;
 	var origId,prevId,prevLat,prevLon;
 	var nameId,prevNameId;
 
@@ -179,13 +181,11 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	/** @type {number} */
 	var stopNum;
 	var stopCount;
-	var nameList;
 	/** @type {Array.<number>} */
 	var dec;
 	var step;
 
 	var advance=function() {
-		var data;
 		var stop;
 
 		switch(step) {

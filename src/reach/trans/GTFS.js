@@ -19,6 +19,8 @@
 
 /** @fileoverview GTFS parser, reads from zip file to internal representation. */
 
+/* jshint -W069 */
+
 goog.provide('reach.trans.GTFS');
 goog.require('gis.Obj');
 goog.require('gis.MU');
@@ -151,7 +153,6 @@ reach.trans.GTFS.prototype.importStops=function(stream,done) {
   * @param {function()} done */
 reach.trans.GTFS.prototype.importWeeks=function(stream,startDate,totalDays,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	var dayList;
 	/** @type {Object.<string,number>} */
@@ -210,7 +211,6 @@ reach.trans.GTFS.prototype.importWeeks=function(stream,startDate,totalDays,done)
   * @param {function()} done */
 reach.trans.GTFS.prototype.importDays=function(stream,startDate,totalDays,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	/** @type {Object.<string,number>} */
 	var validTbl;
@@ -253,7 +253,6 @@ reach.trans.GTFS.prototype.importDays=function(stream,startDate,totalDays,done) 
   * @param {function()} done */
 reach.trans.GTFS.prototype.importRoutes=function(stream,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	var routeTbl;
 
@@ -284,7 +283,6 @@ reach.trans.GTFS.prototype.importRoutes=function(stream,done) {
   * @param {function()} done */
 reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	/** @type {Object.<string,number>} */
 	var validTbl;
@@ -333,7 +331,6 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
   * @param {function()} done */
 reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	/** @type {Object.<string,reach.trans.GTFS.TripDesc>} */
 	var descTbl;

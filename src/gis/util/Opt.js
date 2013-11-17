@@ -13,6 +13,11 @@
 	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
+/** @fileoverview
+  * @suppress {reportUnknownTypes} */
+
+/* jshint -W069 */
+
 goog.provide('gis.util.Opt');
 
 /** @constructor
@@ -47,7 +52,6 @@ gis.util.Opt.prototype.parse=function(argv) {
 	var arg;
 	var rest;
 	var fields,keys;
-	var key;
 	var keyNum,keyCount;
 	var parsed;
 	var pending;
@@ -219,7 +223,7 @@ gis.util.Opt.prototype.printUsage=function() {
 
 	for(i=0;i<l;i++) {
 		alias=conf[restTbl[this.restConf[i]]][1];
-		console.log('  '+alias+Array(28-alias.length).join(' ')+conf[restTbl[this.restConf[i]]][3]+'.');
+		console.log('  '+alias+new Array(28-alias.length).join(' ')+conf[restTbl[this.restConf[i]]][3]+'.');
 	}
 
 	console.log('\nOptions:');
@@ -244,6 +248,6 @@ gis.util.Opt.prototype.printUsage=function() {
 			alias+=conf[key][1];
 		}
 
-		console.log('  '+alias+Array(28-alias.length).join(' ')+conf[key][3]+'.');
+		console.log('  '+alias+new Array(28-alias.length).join(' ')+conf[key][3]+'.');
 	}
 };

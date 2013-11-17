@@ -180,7 +180,6 @@ gis.osm.Way.prototype.getBB=function() {
   * @param {number} lon2
   * @param {number} minDist */
 gis.osm.Way.prototype.douglasPeucker=function(pos1,lat1,lon1,pos2,lat2,lon2,minDist) {
-	var boundS,boundW;
 	var ptList;
 	var dlat,dlon,len,dx,dy;
 	var pos;
@@ -272,7 +271,6 @@ gis.osm.Way.prototype.merge=function(other) {
 	var node;
 	var wayList;
 	var wayNum,wayCount;
-	var bb,bbOther;
 
 	if(this.bb) this.bb.merge(other.bb);
 //	this.getBB().merge(other.getBB());
@@ -347,7 +345,7 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,outList) {
 	var lat,latPrev,dlat,dlat2,latExtra,keyLat,keyLatPrev;
 	var lon,lonPrev,dlon,dlon2,lonExtra,keyLon,keyLonPrev;
 	var ptList;
-	var ptNum,ptCount,ptStart,dropCount,outCount;
+	var ptNum,ptCount,ptStart,outCount;
 	var pt;
 	var ll;
 	var node;
@@ -525,7 +523,6 @@ gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profile
 	var detail,tileSize;
 	var roundOff,tileOff;
 	var dec;
-	var way;
 	var src;
 	var pos;
 
@@ -750,8 +747,6 @@ gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dla
 	var lon,lonPrev,dlon,dlon2;
 	var dist;
 	var offset;
-	var bestDist,bestOffset;
-	var bestPos,bestNext;
 	var dot,cross,tan;
 
 	posPrev=-1;

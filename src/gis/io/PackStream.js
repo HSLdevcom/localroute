@@ -13,6 +13,8 @@
 	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
+/* jshint quotmark:false */
+
 goog.provide('gis.io.PackStream');
 goog.require('gis.Obj');
 goog.require('gis.io.Stream');

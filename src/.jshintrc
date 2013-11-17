@@ -1,0 +1,40 @@
+{
+	"bitwise":false,
+	"camelcase":true,
+	"curly":false,
+	"eqeqeq":false,
+	"es3":true,
+	"forin":true,
+	"freeze":true,
+	"immed":true,
+	"indent":false,	// TODO: set to 4.
+	"latedef":true,
+	"newcap":true,
+	"noarg":true,
+	"noempty":false,
+	"nonew":true,
+	"plusplus":false,
+	"quotmark":"single",
+	"undef":true,
+	"unused":true,
+	"strict":false,	// TODO: set to true.
+	"trailing":true,
+	"maxparams":9,	// TODO: decrease this.
+	"maxdepth":6,	// TODO: decrease this.
+
+	"expr":true,
+	"smarttabs":true,
+
+	"globals":{
+		"goog":true,
+		"console":true,
+		"fs":true,
+		"process":true,
+		"zlib":true,
+		"Buffer":true,
+		"Schema":true,
+
+		"reach":true,
+		"gis":true
+	}
+}

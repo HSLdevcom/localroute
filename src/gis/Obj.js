@@ -13,6 +13,9 @@
 	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
+/* global self */
+/* global window */
+
 goog.provide('gis.Obj');
 
 /** @param {Function} subClass

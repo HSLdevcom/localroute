@@ -299,7 +299,7 @@ gis.osm.QuadTile.prototype.split=function(maxNodes,depth) {
 //	var probeList;
 //	var probeNum,probeCount;
 	var firstList,lastList;
-	var pos,posFirst,posLast;
+	var posFirst,posLast;
 	var tile;
 
 //	console.log('\t'+this.ptCount+' tile nodes.');
@@ -364,7 +364,6 @@ gis.osm.QuadTile.prototype.findWay=function(lat,lon,name,nearest,dlatSrc,dlonSrc
 	var wayNum,wayCount;
 	var way;
 	var firstList,lastList;
-	var maybeNearest;
 
 	wayList=this.wayList;
 	firstList=this.firstList;
@@ -379,19 +378,7 @@ gis.osm.QuadTile.prototype.findWay=function(lat,lon,name,nearest,dlatSrc,dlonSrc
 		if(checker && !checker(way)) continue;
 
 		way.findNearest(lat,lon,firstList[wayNum],lastList[wayNum],nearest,dlatSrc,dlonSrc,angleWeight);
-//		maybeNearest=way.findNearest(lat,lon,firstList[wayNum],lastList[wayNum]);
-//		if(!maybeNearest) continue;
-//		if(!nearest || maybeNearest.sqDist<nearest.sqDist) nearest=maybeNearest;
 	}
 
 	return(nearest);
-}
-
-/** @param {gis.osm.Way} way
-  * @param {number} posPrev
-  * @param {number} posFirst
-  * @param {number} posLast
-  * @return {number} Position of last point that fit in tile, plus one. */
-gis.osm.QuadTile.prototype.insertWayBranch=function(way,posPrev,posFirst,posLast) {
-	// TODO
 };

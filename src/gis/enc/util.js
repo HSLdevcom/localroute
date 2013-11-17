@@ -28,6 +28,6 @@ gis.enc.Util=function() {};
 gis.enc.Util.prototype.toArray8=function(data) {
 	if(gis.env.arrayBuffer && data instanceof ArrayBuffer) data=new Uint8Array(data);
 	return(/** @type {Array|Uint8Array} */ (data));
-}
+};
 
 gis.enc.util=new gis.enc.Util();

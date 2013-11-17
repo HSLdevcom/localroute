@@ -58,9 +58,8 @@ gis.osm.ProfileSet=function() {
 	var accessList;
 	var accessNum,accessCount;
 	var access;
-	var limitTbl;
 	var pos;
-	var flag,limit;
+	var flag;
 
 	/** @type {Object.<string,gis.osm.WayProfile>} */
 	this.wayProfileTbl={};
@@ -364,7 +363,6 @@ gis.osm.ProfileSet.prototype.matchWays=function(p,q,testOnly) {
 gis.osm.ProfileSet.prototype.exportPack=function(stream) {
 	var profileList;
 	var profileNum,profileCount;
-	var key;
 
 	profileList=this.wayProfileList;
 	profileCount=profileList.length;
@@ -385,7 +383,6 @@ console.log('Last profile '+profileNum+' / '+profileCount);
 
 /** @param {gis.io.PackStream} stream */
 gis.osm.ProfileSet.prototype.importPack=function(stream) {
-	var profileList;
 	var profileNum,profileCount;
 	var profile;
 	var dec;
