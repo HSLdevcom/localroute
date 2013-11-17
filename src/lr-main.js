@@ -53,8 +53,11 @@ function init() {
 		inTransTemp:['in-tempt','FILE',null,'Input public transport data in human-readable intermediate format'],
 		outTrans:['out-trans','FILE',null,'Output public transport data in a squeezed package'],
 		inTrans:['T|in-trans','FILE',null,'Onput public transport data in a squeezed package'],
+		mapRound:['map-round','INTEGER',2,'Bits of precision to discard in coordinate compression'],
 		inPBF:['in-pbf','FILE',null,'Input OpenStreetMap data in Protocol Buffer format'],
-		outMap:['out-map','FILE',null,'Input map data in a squeezed package']
+		outMap:['out-map','FILE',null,'Output map data in a squeezed package'],
+		inMap:['in-map','FILE',null,'Input map data in a squeezed package'],
+		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format']
 //      verbose:['v|verbose',null,null,'Print more details'],
 //      stops:['stops','LIST',null,'Print cost of a predefined route'],
 //      nostops:['nostops','LIST',null,'Disable some stops'],
@@ -150,13 +153,42 @@ function init() {
 
 	if(opt.def.inPBF) {
 		taskList.push(function() {
+			var maxWalk;
+			var stopList;
+			var stopNum,stopCount;
+			var ll,sw,ne;
 			var pbf;
 
 			eval("Schema=require('protobuf').Schema;");
 			eval("zlib=require('zlib');");
 			mapSet=new gis.osm.MapSet();
 			pbf=new gis.osm.PBF(mapSet);
+
+			maxWalk=2000;
+			stopList=transSet.stopSet.list;
+			stopCount=stopList.length;
+
+			for(stopNum=0;stopNum<stopCount;stopNum++) {
+				ll=stopList[stopNum].ll;
+
+				sw=ll.offset(-maxWalk,-maxWalk).toDeg();
+				ne=ll.offset(maxWalk,maxWalk).toDeg();
+
+				pbf.addMask(sw,ne);
+			}
+
 			pbf.importPBF(opt.def.inPBF,nextTask);
+		});
+	}
+
+	if(opt.def.inMap) {
+		taskList.push(function() {
+			var stream;
+
+			mapSet=new gis.osm.MapSet();
+			stream=new gis.io.PackStream(fs.readFileSync(opt.def.inMap,'utf8'),null);
+			mapSet.importPack(stream);
+			nextTask();
 		});
 	}
 
@@ -175,7 +207,19 @@ function init() {
 		});
 	}
 
+	if(opt.def.outOSM) {
+		taskList.push(function() {
+			fd=fs.openSync(opt.def.outOSM,'w');
+			mapSet.waySet.exportOSM(write,mapSet.profileSet);
+			fs.closeSync(fd);
+			nextTask();
+		});
+	}
+
 	nextTask();
+
+	// Useful for debugging:
+	// require('repl').start('> ').context.gis=gis;
 }
 
 if(typeof(process)!='undefined' && process.argv && typeof(process.argv[1])=='string' && process.argv[1].match(/(^|[/])lr.js$/)) {
