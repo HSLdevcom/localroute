@@ -1,20 +1,16 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Copyright (C) 2012, 2013 BusFaster Oy
+	Written in 2012, 2013 by Juha Järvi
 
-	LocalRoute.js is free software: you can redistribute it and/or modify it
-	under the terms of the GNU Lesser General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	To the extent possible under law, the author(s) have dedicated all
+	copyright and related and neighboring rights to this software to the
+	public domain worldwide. This software is distributed without any
+	warranty.
 
-	LocalRoute.js is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public License
-	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the CC0 Public Domain Dedication
+	along with this software. If not, see
+	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 goog.provide('gis.Q');
@@ -35,7 +31,7 @@ gis.Q=function() {};
   * @return {number}  */
 gis.Q.toSigned=function(x) {
 	return((x>>>1)^-(x&1));
-}
+};
 
 /** Encode signed integer, compressing to unsigned with least significant bit as sign.
   * In Out
@@ -48,7 +44,7 @@ gis.Q.toSigned=function(x) {
   * @return {number}  */
 gis.Q.fromSigned=function(x) {
 	return((x<<1)^-(x>>>31));
-}
+};
 
 /** Fast fixed point sin, input [0,2pi[ scaled to [0,65536[ and output [-1,1] to [-65536,65536].
   * Adapted from "Fast and accurate sine/cosine" thread at devmaster.net by Nick.
@@ -71,14 +67,14 @@ gis.Q.sin16=function(x) {
 	x=((((x+m^m)*x)>>13)*115+x*397)>>6;
 
 	return(x);
-}
+};
 
 /** Fast fixed point cos, input [0,2pi[ scaled to [0,65536[ and output [-1,1] to [-65536,65536].
   * @param {number} x
   * @return {number}  */
 gis.Q.cos16=function(x) {
 	return(gis.Q.sin16(x+16384));
-}
+};
 
 /** @type {number} Square of a number that definitely fits in the 53-bit integer precision of JavaScript numbers. */
 gis.Q.maxSqr=Math.pow(2,102);
@@ -158,4 +154,20 @@ gis.Q.zeroPad=function(n,width) {
 	if(len>=width) return(n);
 
 	return(new Array(width-n.length+1).join('0')+n);
+};
+
+/** Trim leading and trailing whitespace.
+  * Based on code by Steven Levithan at http://blog.stevenlevithan.com/archives/faster-trim-javascript
+  * @param {string} txt
+  * @return {string} */
+gis.Q.trim=function(txt) {
+	var pos;
+	var re;
+
+	txt=txt.replace(/^\s\s*/,'');
+	pos=txt.length;
+	re=/\s/;
+
+	while(re.test(txt.charAt(--pos))) {}
+	return(txt.substr(0,pos+1));
 };

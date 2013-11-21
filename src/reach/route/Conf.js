@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of LocalRoute.js.
 
 	Copyright (C) 2012, 2013 BusFaster Oy
@@ -17,34 +17,20 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('main');
-goog.require('gis.Obj');
-goog.require('gis.util.Date');
-goog.require('reach.trans.TransSet');
-goog.require('reach.trans.GTFS');
+goog.provide('reach.route.Conf');
 
-var today;
-var startDate;
-var totalDays;
-/** @type {reach.trans.TransSet} */
-var transSet;
-var gtfs;
+/** @constructor */
+reach.route.Conf=function(city) {
+	/** @type {number} Number of TU (Time Units) per one second, defining accuracy. */
+	this.timeDiv=10;
+	/** @type {number} Maximum travel cost. Unit: 1/timeDiv seconds. */
+	this.maxCost=this.timeDiv*60*60* 2;	// 2 hours.
+	/** @type {number} Sentinel value representing infinite cost. Unit: 1/timeDiv seconds. */
+	this.infCost=this.maxCost*2;	// Any number bigger than maxCost.
 
-today=new Date();
+	this.srid='EPSG:4326';	// Default projection, EPSG 4326 is WGS84.
 
-startDate=gis.util.Date.fromYMD(today.getFullYear(),today.getMonth()+1,today.getDate());
-totalDays=30;
-
-transSet=new reach.trans.TransSet(startDate);
-gtfs=new reach.trans.GTFS(transSet);
-
-gtfs.importZip(process.argv[2],startDate,totalDays,function() {
-	var fd;
-
-	/** @param {string} txt */
-	function write(txt) {fs.writeSync(fd,txt,null,'utf8');}
-
-	fd=fs.openSync(process.argv[3],'w');
-	transSet.exportTempPack(write);
-	fs.closeSync(fd);
-});
+	/** @type {number} Walking speed. Unit: TU/m */
+	this.walkTimePerM=60*this.timeDiv/ 70	// 70 m/min
+//	this.walkTimePerM=3.6*this.timeDiv/ 5;	// 5 km/h
+};

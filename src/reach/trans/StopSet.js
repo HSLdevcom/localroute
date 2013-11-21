@@ -17,9 +17,11 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* jshint -W069 */
+
 goog.provide('reach.trans.StopSet');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.NameSet');
+goog.require('gis.enc.NameSet');
 goog.require('gis.io.PackStream');
 
 /** @constructor */
@@ -30,14 +32,21 @@ reach.trans.StopSet=function() {
 	this.count=0;
 };
 
-/** @param {reach.trans.Stop} stop */
-reach.trans.StopSet.prototype.insert=function(stop) {
+/** @param {string} origId
+  * @param {string} name
+  * @param {gis.MU} ll
+  * @return {reach.trans.Stop} */
+reach.trans.StopSet.prototype.insert=function(origId,name,ll) {
+	var stop;
+
+	stop=new reach.trans.Stop(origId,name,ll);
 	stop.id=this.count;
 	this.list[this.count++]=stop;
 
 	return(stop);
 };
 
+/** @param {function(string)} write */
 reach.trans.StopSet.prototype.exportTempPack=function(write) {
 	var stopList;
 	var stopNum,stopCount;
@@ -53,33 +62,38 @@ reach.trans.StopSet.prototype.exportTempPack=function(write) {
 	}
 };
 
+/** @param {gis.io.LineStream} stream */
 reach.trans.StopSet.prototype.importTempPack=function(stream) {
 	var txt;
-	var stopList;
+//	var stopList;
 	var stopNum,stopCount;
 	var stop;
+	var fieldList;
 	var ll;
 
 	txt=stream.readLine();
 
 	stopCount=+txt;
-	stopList=[];
-	stopList.length=stopCount;
-	this.count=stopCount;
+	this.list=[];
+	this.count=0;
+//	stopList=[];
+//	stopList.length=stopCount;
+//	this.count=stopCount;
 
 	for(stopNum=0;stopNum<stopCount;stopNum++) {
 		fieldList=stream.readLine().split('\t');
 		ll=new gis.MU(+fieldList[2],+fieldList[3]);
-		stop=new reach.trans.Stop(fieldList[1],fieldList[4],ll);
+//		stop=new reach.trans.Stop(fieldList[1],fieldList[4],ll);
+		stop=this.insert(fieldList[1],fieldList[4],ll);
 
 		stop.id=+fieldList[0];
-		stopList[stopNum]=stop;
+//		stopList[stopNum]=stop;
 	}
 
-	this.list=stopList;
+//	this.list=stopList;
 };
 
-/** @param {reach.trans.NameSet} nameSet */
+/** @param {gis.enc.NameSet} nameSet */
 reach.trans.StopSet.prototype.getNames=function(nameSet) {
 	var stopList;
 	var stopNum,stopCount;
@@ -116,12 +130,12 @@ reach.trans.StopSet.prototype.clearFollowers=function() {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.NameSet} nameSet */
+  * @param {gis.enc.NameSet} nameSet */
 reach.trans.StopSet.prototype.exportPack=function(stream,nameSet) {
 	var stopList;
 	var stopNum,stopCount;
 	var stop;
-	var ll,lat,lon;
+	var lat,lon;
 	var origId,prevId,prevLat,prevLon;
 	var nameId,prevNameId;
 
@@ -158,7 +172,7 @@ reach.trans.StopSet.prototype.exportPack=function(stream,nameSet) {
 };
 
 /** @param {gis.io.PackStream} stream
-  * @param {reach.trans.NameSet} nameSet
+  * @param {gis.enc.NameSet} nameSet
   * @return {function():number} */
 reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	/** @type {reach.trans.StopSet} */
@@ -176,12 +190,11 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	/** @type {number} */
 	var stopNum;
 	var stopCount;
-	var nameList;
+	/** @type {Array.<number>} */
 	var dec;
 	var step;
 
 	var advance=function() {
-		var data;
 		var stop;
 
 		switch(step) {
@@ -190,9 +203,9 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 				step++;
 
 				self.list=[];
-//				self.tbl={};
+				self.count=0;
 
-				dec=[];
+				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
 				stopCount=dec[0];
 				stopNum=0;
@@ -213,10 +226,11 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 				lon+=gis.Q.toSigned(dec[3]);
 
 				ll=new gis.MU(lat,lon);
-				stop=new reach.trans.Stop(nameSet.list[origId],nameSet.list[nameId],ll);
+//				stop=new reach.trans.Stop(nameSet.list[origId],nameSet.list[nameId],ll);
+				stop=self.insert(nameSet.list[origId],nameSet.list[nameId],ll);
 				stop.followerList=[];
 				stop.statsTo=[];
-				self.insert(stop);
+//				self.insert(stop);
 
 				return(--stopCount);
 		}
@@ -227,7 +241,8 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList
-  * @param {function(reach.trans.Stop):boolean} handler */
+  * @param {function(reach.trans.Stop):boolean} handler
+  * @return {Array.<reach.trans.Stop>} */
 reach.trans.StopSet.prototype.filter=function(stopList,handler) {
 	var outList;
 	var stopNum,stopCount;
@@ -245,13 +260,14 @@ reach.trans.StopSet.prototype.filter=function(stopList,handler) {
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList
-  * @param {function(reach.trans.Line):boolean} handler */
-reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
+  * @param {function(reach.trans.Seq):boolean} handler
+  * @return {Array.<reach.trans.Stop>} */
+reach.trans.StopSet.prototype.filterSeqs=function(stopList,handler) {
 	var outList;
 	var stopNum,stopCount;
 	var stop;
-	var lineList;
-	var lineNum,lineCount;
+	var seqList;
+	var seqNum,seqCount;
 
 	outList=[];
 
@@ -259,11 +275,11 @@ reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
 	for(stopNum=0;stopNum<stopCount;stopNum++) {
 		stop=stopList[stopNum];
 
-		lineList=stop.lineList;
-		lineCount=lineList.length;
+		seqList=stop.seqList;
+		seqCount=seqList.length;
 
-		for(lineNum=0;lineNum<lineCount;lineNum++) {
-			if(handler(lineList[lineNum])) {
+		for(seqNum=0;seqNum<seqCount;seqNum++) {
+			if(handler(seqList[seqNum])) {
 				outList.push(stop);
 				break;
 			}
@@ -278,30 +294,32 @@ reach.trans.StopSet.prototype.filterLines=function(stopList,handler) {
 reach.trans.StopSet.prototype.find=function(term) {
 	var stopList;
 	var name;
+	/** @type {RegExp} */
 	var nameRe;
-	var lineTbl;
-	var lineList;
-	var lineNum,lineCount;
+	/** @type {Object.<number,boolean>} */
+	var seqTbl;
+	var seqList;
+	var seqNum,seqCount;
 
 	stopList=this.list;
-	name=term['name'];
+	name=/** @type {string} */ (term['name']);
 	if(name) {
 		nameRe=new RegExp('^'+name,'i');
 		stopList=this.filter(stopList,function(stop) {
-			return(stop.name && nameRe.test(stop.name));
+			return(!!stop.name && nameRe.test(stop.name));
 		});
 	}
 
-	lineList=term['lines'];
-	if(lineList) {
-		lineTbl={};
-		lineCount=lineList.length;
-		for(lineNum=0;stopNum<stopCount;stopNum++) {
-			lineTbl[stopList[stopNum].id]=true;
+	seqList=/** @type {Array.<reach.trans.Seq>} */ (term['lines']);
+	if(seqList) {
+		seqTbl={};
+		seqCount=seqList.length;
+		for(seqNum=0;seqNum<seqCount;seqNum++) {
+			seqTbl[seqList[seqNum].id]=true;
 		}
 
-		stopList=this.filterLines(stopList,function(line) {
-			return(lineTbl[line.id]||false);
+		stopList=this.filterSeqs(stopList,function(seq) {
+			return(seqTbl[seq.id]||false);
 		});
 	}
 

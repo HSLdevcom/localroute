@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of LocalRoute.js.
 
 	Copyright (C) 2012, 2013 BusFaster Oy
@@ -17,26 +17,25 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('main');
+goog.provide('reach.loc.Location');
 goog.require('gis.Obj');
-goog.require('gis.util.Date');
-goog.require('reach.trans.TransSet');
+goog.require('gis.MU');
 
-/** @type {reach.trans.TransSet} */
-var transSet;
-var stream;
-var fd;
+/** @constructor */
+reach.loc.Location=function() {
+	/** @type {reach.MU} */
+	this.ll;
+	/** @type {string} */
+//	this.id='';
+	/** @type {number} */
+	this.runId=0;
+	/** @type {number} */
+	this.cost=0;
+	/** @type {number} */
+	this.time=0;
+	/** @type {Array.<string>} */
+	this.fieldList;
+};
 
-transSet=new reach.trans.TransSet();
-
-transSet.importTempPack(fs.readFileSync(process.argv[2],'utf8'));
-
-fd=fs.openSync(process.argv[3],'w');
-
-/** @param {string} txt */
-function write(txt) {fs.writeSync(fd,txt,null,'utf8');}
-
-stream=new gis.io.PackStream(null,write);
-transSet.exportPack(stream);
-
-fs.closeSync(fd);
+/** @return {Array.<reach.route.Visitor>} */
+reach.loc.Location.prototype.getVisitors=function() {};

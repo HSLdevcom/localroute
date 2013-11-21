@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of LocalRoute.js.
 
 	Copyright (C) 2012, 2013 BusFaster Oy
@@ -17,24 +17,31 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('main');
+goog.provide('reach.route.Visitor');
 goog.require('gis.Obj');
-goog.require('gis.util.Date');
-goog.require('reach.trans.TransSet');
+goog.require('gis.data.HeapItem');
 
-/** @type {reach.trans.TransSet} */
-var transSet;
-var stream;
-var fd;
+/** @constructor
+  * @implements {gis.data.HeapItem} */
+reach.route.Visitor=function() {
+	/** @type {number} */
+	this.cost=0;
+	/** @type {number} */
+	this.time=0;
+	/** @type {number} Index of this stop in Dijkstra's heap. */
+	this.heapIndex;
+	/** @type {reach.route.Visitor} */
+	this.heapPrev=null;
+	/** @type {reach.route.Visitor} */
+	this.heapNext=null;
+};
 
-transSet=new reach.trans.TransSet();
+/** @enum {number} */
+reach.route.Visitor.State={
+	OK:0,
+	WAIT:-1
+};
 
-stream=new gis.io.PackStream(fs.readFileSync(process.argv[2],'utf8'),null);
-transSet.importPack(stream);
-
-/** @param {string} txt */
-function write(txt) {fs.writeSync(fd,txt,null,'utf8');}
-
-fd=fs.openSync(process.argv[3],'w');
-transSet.exportTempPack(write);
-fs.closeSync(fd);
+/** @param {reach.route.Dijkstra} dijkstra
+  * @return {reach.route.Visitor.State} */
+reach.route.Visitor.prototype.visit=function(dijkstra) {};

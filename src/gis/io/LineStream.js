@@ -24,7 +24,7 @@ goog.require('gis.io.Stream');
 /** @constructor
   * @extends {gis.io.Stream}
   * @param {string} data
-  * @param {function(string)} write */
+  * @param {function(string)|null} write */
 gis.io.LineStream=function(data,write) {
 	var lineList;
 
@@ -37,17 +37,17 @@ gis.io.LineStream=function(data,write) {
 	this.lineList=lineList;
 	/** @type {number} */
 	this.lineCount=lineList.length;
-	/** @type {function(string)} */
-	this.write=write;
+	/** @type {function(string)|null} */
+	this.write=write||null;
 };
 
 gis.inherit(gis.io.LineStream,gis.io.Stream);
 
-/** @return {string} */
+/** @return {string|null} */
 gis.io.LineStream.prototype.readLine=function() {
 	if(this.pos>=this.lineCount) return(null);
 	return(this.lineList[this.pos++]);
-}
+};
 
 /** @param {string} txt */
 gis.io.LineStream.prototype.writeText=function(txt) {

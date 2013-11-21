@@ -1,4 +1,4 @@
-/**
+/*
 	This file is part of LocalRoute.js.
 
 	Copyright (C) 2012, 2013 BusFaster Oy
@@ -17,7 +17,29 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('main');
+goog.provide('reach.route.Batch');
 goog.require('gis.Obj');
-goog.require('gis.util.Date');
-goog.require('reach.trans.TransSet');
+goog.require('reach.route.GeoCoder');
+goog.require('reach.route.Conf');
+goog.require('reach.route.Dijkstra');
+
+/** @constructor
+  * @param {gis.osm.MapSet} mapSet */
+reach.route.Batch=function(mapSet,geoCoder) {
+    /** @type {gis.osm.MapSet} */
+    this.mapSet=mapSet;
+
+	/** @type {reach.route.GeoCoder} */
+	this.geoCoder=geoCoder;
+
+	/** @type {reach.route.Dijkstra} */
+	this.dijkstra=new reach.route.Dijkstra();
+};
+
+/** @param {string} addrFrom */
+reach.route.Batch.prototype.run=function(addrFrom) {
+	var locFrom;
+
+	locFrom=this.geoCoder.find(addrFrom);
+	this.dijkstra.start([locFrom],new reach.route.Conf());
+};

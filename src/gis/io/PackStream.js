@@ -1,21 +1,19 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Copyright (C) 2012, 2013 BusFaster Oy
+	Written in 2012, 2013 by Juha Järvi
 
-	LocalRoute.js is free software: you can redistribute it and/or modify it
-	under the terms of the GNU Lesser General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	To the extent possible under law, the author(s) have dedicated all
+	copyright and related and neighboring rights to this software to the
+	public domain worldwide. This software is distributed without any
+	warranty.
 
-	LocalRoute.js is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public License
-	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the CC0 Public Domain Dedication
+	along with this software. If not, see
+	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
+
+/* jshint quotmark:false */
 
 goog.provide('gis.io.PackStream');
 goog.require('gis.Obj');
@@ -23,8 +21,8 @@ goog.require('gis.io.Stream');
 
 /** @constructor
   * @extends {gis.io.Stream}
-  * @param {string} data
-  * @param {function(string)} write */
+  * @param {string|null} data
+  * @param {function(string)|null} write */
 gis.io.PackStream=function(data,write) {
 	//                  1         2         3         4         5         6          7         8         9
 	//        123 456789012345678901234567890123456789012345678901234567890 123456789012345678901234567890123456
@@ -47,11 +45,11 @@ gis.io.PackStream=function(data,write) {
 	/** @type {number} */
 	this.extra=tbl.length-64;
 
-	/** @type {string} */
+	/** @type {string|null} */
 	this.data=data;
 	/** @type {number} */
 	this.len=data?data.length:0;
-	/** @type {function(string)} */
+	/** @type {function(string)|null} */
 	this.write=write;
 };
 
@@ -125,6 +123,7 @@ gis.io.PackStream.prototype.encodeShort=function(data) {
 
 	while(len--) {
 		x=data[len];
+		// if(x<0) {console.trace('Negative number to encode!');throw('Negative number to encode!');}
 		result=enc[x&63]+result;
 		x>>=6;
 
@@ -163,6 +162,7 @@ gis.io.PackStream.prototype.encodeLong=function(data) {
 
 	while(len--) {
 		x=data[len];
+		// if(x<0) {console.trace('Negative number to encode!');throw('Negative number to encode!');}
 		c=x%extra;
 		x=(x-c)/extra;
 		result=enc[c+64]+result;

@@ -22,7 +22,7 @@ goog.require('gis.Obj');
 goog.require('gis.MU');
 goog.require('gis.util.Date');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.Line');
+goog.require('reach.trans.Seq');
 goog.require('reach.trans.Trip');
 
 /** @constructor */
@@ -39,8 +39,8 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 
 	var stopSet;
 	var stopTbl;
-	var lineSet;
-	var lineTbl;
+	var seqSet;
+	var seqTbl;
 	var keySet;
 	var keyTbl;
 	var tripSet;
@@ -58,12 +58,12 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 	validTbl=[];
 
 	stopSet=this.transSet.stopSet;
-	lineSet=this.transSet.lineSet;
+	seqSet=this.transSet.seqSet;
 	keySet=this.transSet.keySet;
 	tripSet=this.transSet.tripSet;
 
 	stopTbl={};
-	lineTbl={};
+	seqTbl={};
 	keyTbl={};
 	tripTbl={};
 
@@ -105,10 +105,13 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 		else if(name=='Station' && !isSynonym) {
 			origId=attr['StationId'];
 			ll=new gis.Deg(attr['Y'],attr['X']).toMU();
-			stop=new reach.trans.Stop(origId,attr['Name'],ll);
+//			stop=new reach.trans.Stop(origId,attr['Name'],ll);
 
+//			stopTbl[origId]=stop;
+//			stopSet.insert(stop);
+
+			stop=stopSet.insert(origId,attr['Name'],ll);
 			stopTbl[origId]=stop;
-			stopSet.insert(stop);
 		} else if(name=='Footnote' && attr['Firstdate'] && attr['Vector']) {
 			id=+attr['FootnoteId'];
 			dateParts=attr['Firstdate'].split('-');
@@ -158,7 +161,7 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 		var stopCount;
 		var stop;
 		var stopList;
-		var line;
+		var seq;
 		var timeData;
 		var timeList;
 		var timeCount;
@@ -172,8 +175,8 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 
 			stopData=refList.join('\t');
 
-			line=lineTbl[stopData];
-			if(!line) {
+			seq=seqTbl[stopData];
+			if(!seq) {
 				stopList=[];
 				stopCount=0;
 				refCount=refList.length;
@@ -183,14 +186,14 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 					if(stop) stopList[stopCount++]=stop;
 				}
 
-				line=new reach.trans.Line();
-				line.stopList=stopList;
+				seq=new reach.trans.Seq();
+				seq.stopList=stopList;
 
-				lineTbl[stopData]=line;
-				lineSet.insert(line);
+				seqTbl[stopData]=seq;
+				seqSet.insert(seq);
 			}
 
-			key=line.id+'\t'+mode+'\t'+key;
+			key=seq.id+'\t'+mode+'\t'+key;
 			timeData=key+'\t'+tripTimeList.join('\t');
 
 			trip=tripTbl[timeData];
@@ -198,7 +201,7 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 				keyObj=keyTbl[key];
 				if(!keyObj) {
 					keyParts=key.split('\t');
-					keyObj=new reach.trans.Key(line);
+					keyObj=new reach.trans.Key(seq);
 					keyObj.mode=keyParts[1];
 					keyObj.shortCode=keyParts[3];
 					keyObj.name=keyParts[4];
@@ -220,7 +223,7 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 					prevTime=time;
 				}
 
-				trip=new reach.trans.Trip(line,keyObj);
+				trip=new reach.trans.Trip(seq,keyObj);
 				trip.valid=valid;
 				trip.timeList=timeList;
 				trip.startTime=timeList[0];

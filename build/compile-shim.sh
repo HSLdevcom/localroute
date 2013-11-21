@@ -2,7 +2,11 @@
 BASE=${1%.*}
 BASE=${BASE%-main}
 
-python ../bin/closurebuilder.py -i ../src/$BASE-main.js ../src/$BASE-main.js --root=../src/gis --root=../src/reach --root=../shim |
+if [ -f ../src/$BASE-main.js ]; then
+../bin/assemble.sh -i ../src/$BASE-main.js ../src/$BASE-main.js \
+--root=../src/gis \
+--root=../src/reach \
+--root=../shim |
 sed -e "s/^/--js /" |
 xargs java -jar ../bin/compiler.jar \
 --jscomp_warning checkTypes \
@@ -15,7 +19,8 @@ xargs java -jar ../bin/compiler.jar \
 --js_output_file ../dist/$BASE.js \
 --externs ../src/extern.js \
 --manage_closure_dependencies true \
-#--formatting PRETTY_PRINT --debug \
 2>report.txt
+#--formatting PRETTY_PRINT --debug \
 
 cat report.txt
+fi

@@ -19,14 +19,15 @@
 
 /** @fileoverview GTFS parser, reads from zip file to internal representation. */
 
+/* jshint -W069 */
+
 goog.provide('reach.trans.GTFS');
 goog.require('gis.Obj');
 goog.require('gis.MU');
 goog.require('gis.util.Date');
-goog.require('gis.io.LineStream');
 goog.require('gis.enc.CSVStream');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.Line');
+goog.require('reach.trans.Seq');
 goog.require('reach.trans.Trip');
 
 /** @constructor
@@ -38,20 +39,29 @@ reach.trans.GTFS=function(transSet) {
 	this.stopTbl={};
 	/** @type {Object.<string,number>} */
 	this.validTbl={};
+	/** @type {Object.<string,reach.trans.GTFS.RouteDesc>} */
 	this.routeTbl={};
+	/** @type {Object.<string,reach.trans.GTFS.TripDesc>} */
 	this.descTbl={};
 	/** @type {Object.<string,reach.trans.Trip>} */
 	this.tripTbl={};
 	/** @type {number} */
 	this.tripCount=0;
-	/** @type {Object.<string,reach.trans.Line>} */
-	this.lineTbl={};
+	/** @type {Object.<string,reach.trans.Seq>} */
+	this.seqTbl={};
 	/** @type {Object.<string,reach.trans.Key>} */
 	this.keyTbl={};
 };
 
+/** @typedef {{route:string,valid:number,sign:string,arriveList:Array.<number>,departList:Array.<number>,stopList:Array.<string>,flagList:Array.<number>,done:boolean}} */
+reach.trans.GTFS.TripDesc;
+
+/** @typedef {{shortCode:string,name:string,mode:number}} */
+reach.trans.GTFS.RouteDesc;
+
 /** @param {string} zipPath
-  * @param {string} name */
+  * @param {string} name
+  * @return {gis.enc.CSVStream} */
 reach.trans.GTFS.prototype.readFile=function(zipPath,name) {
 	var stream;
 	var child;
@@ -79,7 +89,8 @@ reach.trans.GTFS.prototype.getFields=function(row) {
 	return(fieldTbl);
 };
 
-/** @param {string} txt */
+/** @param {string} txt
+  * @return {number} */
 reach.trans.GTFS.prototype.parseTime=function(txt) {
 	var timeParts;
 
@@ -93,7 +104,8 @@ reach.trans.GTFS.prototype.parseDate=function(txt) {
 	return(gis.util.Date.fromYMD(+txt.substr(0,4),+txt.substr(4,2),+txt.substr(6,2)));
 };
 
-/** @param {gis.enc.CSVStream} stream */
+/** @param {gis.enc.CSVStream} stream
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importStops=function(stream,done) {
 	var self=this;
 	var rowNum;
@@ -125,10 +137,13 @@ reach.trans.GTFS.prototype.importStops=function(stream,done) {
 		} else {
 			id=row[stopCol];
 			ll=new gis.Deg(+row[latCol],+row[lonCol]).toMU();
-			stop=new reach.trans.Stop(row[codeCol],row[nameCol],ll);
+//			stop=new reach.trans.Stop(row[codeCol],row[nameCol],ll);
 
+//			stopTbl[id]=stop;
+//			stopSet.insert(stop);
+
+			stop=stopSet.insert(row[codeCol],row[nameCol],ll);
 			stopTbl[id]=stop;
-			stopSet.insert(stop);
 		}
 	});
 
@@ -137,12 +152,13 @@ reach.trans.GTFS.prototype.importStops=function(stream,done) {
 
 /** @param {gis.enc.CSVStream} stream
   * @param {gis.util.Date} startDate
-  * @param {number} totalDays */
+  * @param {number} totalDays
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importWeeks=function(stream,startDate,totalDays,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	var dayList;
+	/** @type {Object.<string,number>} */
 	var validTbl;
 
 	var fieldTbl;
@@ -194,11 +210,12 @@ reach.trans.GTFS.prototype.importWeeks=function(stream,startDate,totalDays,done)
 
 /** @param {gis.enc.CSVStream} stream
   * @param {gis.util.Date} startDate
-  * @param {number} totalDays */
+  * @param {number} totalDays
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importDays=function(stream,startDate,totalDays,done) {
 	var self=this;
-	var stream;
 	var rowNum;
+	/** @type {Object.<string,number>} */
 	var validTbl;
 
 	var fieldTbl;
@@ -210,6 +227,7 @@ reach.trans.GTFS.prototype.importDays=function(stream,startDate,totalDays,done) 
 	/** @param {Array.<string>} row */
 	stream.on('data',function(row) {
 		var offset;
+		var valid;
 		var flag;
 
 		if(!rowNum++) {
@@ -234,10 +252,10 @@ reach.trans.GTFS.prototype.importDays=function(stream,startDate,totalDays,done) 
 	stream.on('end',done);
 };
 
-/** @param {gis.enc.CSVStream} stream */
+/** @param {gis.enc.CSVStream} stream
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importRoutes=function(stream,done) {
 	var self=this;
-	var stream;
 	var rowNum;
 	var routeTbl;
 
@@ -264,11 +282,12 @@ reach.trans.GTFS.prototype.importRoutes=function(stream,done) {
 	stream.on('end',done);
 };
 
-/** @param {gis.enc.CSVStream} stream */
+/** @param {gis.enc.CSVStream} stream
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 	var self=this;
-	var stream;
 	var rowNum;
+	/** @type {Object.<string,number>} */
 	var validTbl;
 	var descTbl;
 
@@ -282,6 +301,9 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 
 	/** @param {Array.<string>} row */
 	stream.on('data',function(row) {
+		var tripDesc;
+		var valid;
+
 		if(!rowNum++) {
 			fieldTbl=self.getFields(row);
 
@@ -308,12 +330,14 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 };
 
 /** @param {gis.enc.CSVStream} stream
-  * @param {boolean} fast */
+  * @param {boolean} fast
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 	var self=this;
-	var stream;
 	var rowNum;
+	/** @type {Object.<string,reach.trans.GTFS.TripDesc>} */
 	var descTbl;
+	/** @type {reach.trans.GTFS.TripDesc|null} */
 	var prevDesc;
 
 	var fieldTbl;
@@ -327,6 +351,7 @@ reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 	stream.on('data',function(row) {
 		var tripDesc;
 		var flag;
+		var pos;
 
 		if(!rowNum++) {
 			fieldTbl=self.getFields(row);
@@ -371,6 +396,7 @@ reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 	});
 };
 
+/** @param {reach.trans.GTFS.TripDesc} tripDesc */
 reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var refList;
 	var refNum,refCount;
@@ -379,10 +405,10 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var prevTime;
 	var stopTbl;
 	var stopList;
-	var stopCount;
-	var lineSet;
-	var lineTbl;
-	var line;
+	var stopNum,stopCount;
+	var seqSet;
+	var seqTbl;
+	var seq;
 	var keySet;
 	var keyTbl;
 	var keyObj;
@@ -394,11 +420,11 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var trip;
 	var arrive,depart;
 
-	lineSet=this.transSet.lineSet;
+	seqSet=this.transSet.seqSet;
 	keySet=this.transSet.keySet;
 	tripSet=this.transSet.tripSet;
 
-	lineTbl=this.lineTbl;
+	seqTbl=this.seqTbl;
 	stopTbl=this.stopTbl;
 	keyTbl=this.keyTbl;
 	routeTbl=this.routeTbl;
@@ -429,24 +455,24 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	}
 
 	key=refList.join('\t');
-	line=lineTbl[key];
-	if(!line) {
+	seq=seqTbl[key];
+	if(!seq) {
 		stopList=[];
 		for(stopNum=0;stopNum<stopCount;stopNum++) {
 			stopList[stopNum]=stopTbl[refList[stopNum]];
 		}
 
-		line=new reach.trans.Line();
-		line.stopList=stopList;
+		seq=new reach.trans.Seq();
+		seq.stopList=stopList;
 
-		lineTbl[key]=line;
-		lineSet.insert(line);
+		seqTbl[key]=seq;
+		seqSet.insert(seq);
 	}
 
-	key=line.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
+	key=seq.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
 	keyObj=keyTbl[key];
 	if(!keyObj) {
-		keyObj=new reach.trans.Key(line);
+		keyObj=new reach.trans.Key(seq);
 
 		route=routeTbl[tripDesc.route];
 		keyObj.mode=route.mode;
@@ -479,8 +505,10 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 
 /** @param {string} path
   * @param {gis.util.Date} startDate
-  * @param {number} totalDays */
+  * @param {number} totalDays
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
+	/** @type {reach.trans.GTFS} */
 	var self=this;
 
 	function importStops() {self.importStops(self.readFile(path,'stops.txt'),importWeeks);}

@@ -1,20 +1,16 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Copyright (C) 2012, 2013 BusFaster Oy
+	Written in 2012, 2013 by Juha Järvi
 
-	LocalRoute.js is free software: you can redistribute it and/or modify it
-	under the terms of the GNU Lesser General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	To the extent possible under law, the author(s) have dedicated all
+	copyright and related and neighboring rights to this software to the
+	public domain worldwide. This software is distributed without any
+	warranty.
 
-	LocalRoute.js is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public License
-	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the CC0 Public Domain Dedication
+	along with this software. If not, see
+	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 /** @fileoverview Definition of Map Units and WGS84 ellipsoid. */
@@ -35,6 +31,9 @@ gis.MU=function(lat,lon) {
 	this.llon=lon;
 };
 
+/** @type {gis.MU} Used to avoid creating new objects for temporary use. */
+gis.MU.ll=new gis.MU(0,0);
+
 /** @type {number} Number of bits to use for coordinates. */
 gis.MU.bits=30;
 /** @type {number} Maximum Map Unit coordinate value. */
@@ -47,6 +46,12 @@ gis.MU.major=6378137;
 gis.MU.minor=gis.MU.major*(1-gis.MU.flatten);
 /** @type {number} Min/max latitude for square-shaped Mercator projection. */
 gis.MU.degLatRange=85.05112877980659;
+/** @type {Array.<number>} Table for finding rightmost set bit by de Bruijn multiplication.
+  * From Bit Twiddling Hacks by Sean Eron Anderson. */
+gis.MU.bsr=[
+     0,  1, 28,  2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17,  4, 8,
+    31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18,  6, 11,  5, 10, 9
+];
 
 /** @return {string} */
 gis.MU.prototype.toString=function() {
@@ -90,7 +95,6 @@ gis.MU.prototype.offset=function(north,east) {
 gis.MU.getScale=function(lat) {
 	var scale;
 	var f,t;
-	var north,east;
 
 	// Tangent of latitude.
 	t=Math.exp((lat/gis.MU.range*2-1)*Math.PI);
@@ -110,7 +114,6 @@ gis.MU.getScale=function(lat) {
   * @param {gis.MU} ll
   * @return {number} Distance. Unit: meters. */
 gis.MU.prototype.distTo=function(ll) {
-/*
 	var f,t;
 	var scale;
 	var north,east;
@@ -128,14 +131,57 @@ gis.MU.prototype.distTo=function(ll) {
 	// Calculate displacement in meters in rectangular coordinates.
 	north=(ll.llat-this.llat)*(1+( t*3-f )/2)/scale;
 	east=(ll.llon-this.llon)*(1+( t+f )/2)/scale;
-*/
-
-	var scale;
-	var north,east;
-
-	scale=gis.MU.getScale((this.llat+ll.llat)/2);
-	north=(ll.llat-this.llat)*scale;
-	east=(ll.llon-this.llon)*scale;
 
 	return(Math.sqrt(north*north+east*east));
+};
+
+/** Pack coordinate pair into an IEEE 754 double precision number, like this:
+  * seeeeeee eeeeaaaa aaaaaaaa aaaaaaaa aaaooooo oooooooo oooooooo ooooooo1
+  * 28 o's are longitude bits, 23 a's are latitude bits, 11 e's the exponent.
+  * One more bit of latitude is implicitly encoded into e by normalization,
+  * 4 more bits explicitly by multiplying the entire number by a power of 2.
+  * Note that coordinates are rounded to 28 bits!
+  * @param {number} lat
+  * @param {number} lon
+  * @return {number} */
+gis.MU.toNum=function(lat,lon) {
+	lat=(lat+2)>>2;
+	lon=(lon+2)>>2;
+
+	return( ( ((lat&0xffffff)*(1<<28)+lon)*2+1 ) * ((1<<(lat>>24))>>>0) );
+};
+
+/** @return {number} */
+gis.MU.prototype.toNum=function() {
+	return(gis.MU.toNum(this.llat,this.llon));
+//	var lat;
+//	lat=(this.llat+2)>>2;
+//	return( ( ((lat&0xffffff)*(1<<28)+((this.llon+2)>>2))*2+1 ) * ((1<<(lat>>24))>>>0) );
+};
+
+/** Unpack coordinate pair from an IEEE 754 double precision number.
+  * @param {number} n
+  * @return {gis.MU} */
+gis.MU.prototype.fromNum=function(n) {
+    var e;
+
+	// Rightmost bit of mantissa is 1, some latitude bits are encoded into the
+	// exponent causing the rightmost bit to shift left after converting to int.
+	e=gis.MU.bsr[(((n&-n)>>>0)*0x077cb531)>>>27];
+	// Divide by exponent offset to get all 53 bits of mantissa.
+	n/=((1<<e)>>>0)*2;
+
+	this.llat=((n/(1<<28))|(e<<24))<<2;
+	this.llon=(n&((1<<28)-1))<<2;
+
+	return(this);
+};
+
+/** @param {number} n
+  * @return {gis.MU} */
+gis.MU.fromNum=function(n) {
+	var ll;
+
+	ll=new gis.MU(0,0);
+	return(ll.fromNum(n));
 };

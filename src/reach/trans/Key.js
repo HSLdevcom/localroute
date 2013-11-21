@@ -18,17 +18,15 @@
 */
 
 goog.provide('reach.trans.Key');
-goog.require('reach.trans.Line');
+goog.require('reach.trans.Seq');
 
 /** @constructor
-  * @param {reach.trans.Line} line */
-reach.trans.Key=function(line) {
-	var fieldList;
-
+  * @param {reach.trans.Seq} seq */
+reach.trans.Key=function(seq) {
 	/** @type {number} */
 	this.id=0;
-	/** @type {reach.trans.Line} */
-	this.line=line;
+	/** @type {reach.trans.Seq} */
+	this.seq=seq;
 
 	/** @type {number} */
 	this.mode;

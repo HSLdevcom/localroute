@@ -17,6 +17,8 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* jshint -W069 */
+
 goog.provide('gis.enc.CSVStream');
 
 /** @constructor
@@ -37,7 +39,10 @@ gis.enc.CSVStream=function() {
 	this.quote=false;
 };
 
-util.inherits(gis.enc.CSVStream,Stream.Transform);
+try {
+	eval("Stream=require('stream');");
+	eval("require('util').inherits(gis.enc.CSVStream,Stream.Transform);");
+} catch(e) {}
 
 /** @param {string} line
   * @return {boolean} */
@@ -156,3 +161,6 @@ gis.enc.CSVStream.prototype['_flush']=function(done) {
 
 	done();
 };
+
+/** @type {function(string,function(Array.<string>))} */
+gis.enc.CSVStream.prototype.on;

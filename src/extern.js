@@ -1,20 +1,16 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Copyright (C) 2012, 2013 BusFaster Oy
+	Written in 2012, 2013 by Juha Järvi
 
-	LocalRoute.js is free software: you can redistribute it and/or modify it
-	under the terms of the GNU Lesser General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	To the extent possible under law, the author(s) have dedicated all
+	copyright and related and neighboring rights to this software to the
+	public domain worldwide. This software is distributed without any
+	warranty.
 
-	LocalRoute.js is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU Lesser General Public License for more details.
-
-	You should have received a copy of the GNU Lesser General Public License
-	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the CC0 Public Domain Dedication
+	along with this software. If not, see
+	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
 /** @type {Object} */
@@ -39,14 +35,16 @@ window.opera={
 /** @constructor */
 function FileDescriptor() {}
 
-/** @constructor */
-function Buffer() {}
+/** @constructor
+  * @param {string|number} data
+  * @param {string=} enc */
+function Buffer(data,enc) {}
 
 /** @param {*} buf
   * @return {boolean} */
 Buffer.isBuffer=function(buf) {};
 
-/** @param {string} enc
+/** @param {string=} enc
   * @return {string} */
 Buffer.prototype.toString=function(enc) {};
 
@@ -111,12 +109,19 @@ var fs={
 	readFile:function(path,enc,handler) {},
 	/** @param {string} path
 	  * @param {string=} enc
-	  * @return {NodeBuffer} */
+	  * @return {Buffer|string} */
 	readFileSync:function(path,enc) {},
 	/** @param {string} path
 	  * @param {string} mode
 	  * @return {FileDescriptor} */
 	openSync:function(path,mode) {},
+	/** @param {FileDescriptor} fd
+	  * @param {Buffer} buf
+	  * @param {number} pos
+	  * @param {number} len
+	  * @param {?string=} enc
+	  * @return {Buffer} */
+	readSync:function(fd,buf,pos,len,enc) {},
 	/** @param {FileDescriptor} fd
 	  * @param {string} txt
 	  * @param {?number=} pos
@@ -449,7 +454,7 @@ WorkerEvent.prototype.data;
   * @param {string} path */
 var WWorker=function(path) {};
 
-/** @param {WorkerEvent} evt */
+/** @param {MessageEvent|WorkerEvent} evt */
 WWorker.prototype.onmessage=function(evt) {};
 
 /** @param {*} msg */
@@ -489,47 +494,81 @@ pg.Client.prototype.query=function(sql) {};
 
 pg.Client.prototype.end=function() {};
 
-/** @constructor */
-var NodeBuffer=function() {};
+/** @param {number} pos
+  * @param {number} len
+  * @return {Buffer} */
+Buffer.prototype.slice=function(pos,len) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readUInt8=function(pos) {};
+Buffer.prototype.readUInt8=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readUInt16LE=function(pos) {};
+Buffer.prototype.readUInt16LE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readUInt16BE=function(pos) {};
+Buffer.prototype.readUInt16BE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readUInt32LE=function(pos) {};
+Buffer.prototype.readUInt32LE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readUInt32BE=function(pos) {};
+Buffer.prototype.readUInt32BE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readFloatLE=function(pos) {};
+Buffer.prototype.readFloatLE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readFloatBE=function(pos) {};
+Buffer.prototype.readFloatBE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readDoubleLE=function(pos) {};
+Buffer.prototype.readDoubleLE=function(pos) {};
 
 /** @param {number} pos
   * @return {number} */
-NodeBuffer.prototype.readDoubleBE=function(pos) {};
+Buffer.prototype.readDoubleBE=function(pos) {};
 
 /** @constructor */
 var NodeStat=function() {};
 
 /** @type {number} */
 NodeStat.prototype.size;
+
+/** @typedef {Object.<string,Array.<string>>} */
+var Primitive;
+
+/** @typedef {Array.<Primitive>} */
+var PrimitiveList;
+
+/** @typedef {Primitive|PrimitiveList} */
+var PrimitiveGroup;
+
+/** @typedef {{granularity:number,stringtable:{s:Array.<Buffer>},primitivegroup:Array.<Object.<string,PrimitiveGroup>>}} */
+var PrimitiveBlock;
+
+/** @typedef {{parse:function(Buffer):PrimitiveBlock}} */
+var PrimitiveBlockParser;
+
+/** @typedef {{parse:function(Buffer):{zlibData:Buffer}}} */
+var BlobParser;
+
+/** @typedef {{parse:function(Buffer):{datasize:number,type:string}}} */
+var HdrParser;
+
+/** @type {Object} */
+var zlib={
+	/** @param {Buffer} buf
+	  * @param {function(string,Buffer)} handler */
+	inflate:function(buf,handler) {}
+};
+
+/** @constructor
+  * @param {Buffer} buf */
+var Schema=function(buf) {};
