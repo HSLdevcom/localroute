@@ -58,7 +58,7 @@ gis.osm.Way=function() {
 	/** @type {gis.osm.WayProfile} Road classification, access rights and other characteristics. */
 	this.profile;
 	/** @type {number} */
-	this.id;
+//	this.id;
 
 	/** @type {gis.osm.Way} */
 	this.next;
@@ -97,8 +97,18 @@ gis.osm.Way.Src={
 	NEW:2,
 	MISS:3,
 	HIT:4,
-	REF:5
+	REF:5,
+	NAMEREF:6
 };
+
+/** @enum {number} Encoding prefixes for special features, still some left for the future. */
+gis.osm.Way.Code={
+	UNUSED1:0,
+	NAMEREF:2,
+	UNUSED2:4,
+	UNUSED3:6,
+	REF:8
+}
 
 /** Convert point at pos represented as a number into a node object.
   * @param {number} pos
@@ -359,6 +369,30 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,outList) {
 	var extraNum,extraCount;
 	var extraPos,extraScale;
 
+	function writeRef(node,lat,lon,latPrev,lonPrev) {
+		keyLatPrev=(latPrev+tileOff)>>tileSize;
+		keyLonPrev=(lonPrev+tileOff)>>tileSize;
+		keyLat=lat>>tileSize;
+		keyLon=lon>>tileSize;
+
+		quad=0;
+		if(keyLat==keyLatPrev-1) quad|=1;
+		else if(keyLat!=keyLatPrev) quad=4;
+
+		if(keyLon==keyLonPrev-1) quad|=2;
+		else if(keyLon!=keyLonPrev) quad=4;
+
+		if(quad>=4) {
+			// The following leaves code 8 unused.
+			// Cache miss, store node ID.
+			outList.push((state.exportId-node.iterId)*10+8);
+		} else {
+			// Cache hit, store node index within nearby rectangular area.
+			// The following leaves codes 0, 2, 4 and 6 unused.
+			outList.push((exportTbl[keyLat+' '+keyLon]-node.exportKey)*10+quad*2);
+		}
+	}
+
 	ptList=this.ptList;
 	ptCount=ptList.length;
 	ptStart=this.ptStart;
@@ -426,37 +460,7 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,outList) {
 				node.exportKey=exportTbl[key]++;
 			}
 		} else {
-//			if(node.exportKey) {	// TODO: this test shouldn't be needed...
-				keyLatPrev=(latPrev+tileOff)>>tileSize;
-				keyLonPrev=(lonPrev+tileOff)>>tileSize;
-				keyLat=lat>>tileSize;
-				keyLon=lon>>tileSize;
-
-				key=keyLat+' '+keyLon;
-
-				quad=0;
-				if(keyLat==keyLatPrev-1) quad|=1;
-				else if(keyLat!=keyLatPrev) quad=4;
-
-				if(keyLon==keyLonPrev-1) quad|=2;
-				else if(keyLon!=keyLonPrev) quad=4;
-//			} else quad=4;
-
-			if(quad>=4) {
-//				state.missLen+=stream.writeLong([(state.exportId-node.iterId-1)*10+8]);
-				// The following leaves code 8 unused.
-//				state.missLen+=stream.writeLong([(state.exportId-node.iterId)*10+8]);
-				// Cache miss, store node ID.
-				outList.push((state.exportId-node.iterId)*10+8);
-				state.missCount++;
-			} else {
-//				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey-1)*10+quad*2]);
-//				state.hitLen+=stream.writeLong([(exportTbl[key]-node.exportKey)*10+quad*2]);
-				// Cache hit, store node index within nearby rectangular area.
-				// The following leaves codes 0, 2, 4 and 6 unused.
-				outList.push((exportTbl[key]-node.exportKey)*10+quad*2);
-				state.hitCount++;
-			}
+			writeRef(node,lat,lon,latPrev,lonPrev);
 		}
 
 		if(extraPosList) {
@@ -470,7 +474,7 @@ gis.osm.Way.prototype.exportPack=function(stream,exportTbl,state,outList) {
 					outCount++;
 extraScale=1024;
 off=~~((extraPos-~~extraPos)*extraScale);
-					outList.push(8,off);
+					outList.push(gis.osm.Way.Code.REF,off);
 off/=extraScale;
 latExtra=~~((lat<<detail)+(dlat2*off-dlat2)*(1<<detail)+roundOff*0)>>detail;
 lonExtra=~~((lon<<detail)+(dlon2*off-dlon2)*(1<<detail)+roundOff*0)>>detail;
@@ -487,6 +491,11 @@ node.ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 
 					node.iterId=state.exportId++;
 					node.exportKey=exportTbl[key]++;
+				} else if(node.iterId) {
+					// TODO: this would be unnecessary with a better data model for merged lanes.
+					outCount++;
+					outList.push(gis.osm.Way.Code.NAMEREF);
+					writeRef(node,(node.ll.llat+roundOff)>>detail,(node.ll.llon+roundOff)>>detail,lat,lon);
 				}
 
 				extraNum++;
@@ -526,6 +535,39 @@ gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profile
 	var src;
 	var pos;
 
+	/** @param {number} code */
+	function parseRef(code) {
+		var quad,off;
+		var keyLat,keyLon;
+		var key;
+		var group;
+		var node;
+
+		quad=(code>>1)%5;
+		off=~~(code/10);
+
+		if(quad<4) {
+			src=gis.osm.Way.Src.HIT;
+
+			keyLat=((lat+tileOff)>>tileSize)-(quad&1);
+			keyLon=((lon+tileOff)>>tileSize)-(quad>>1);
+
+			key=keyLat+' '+keyLon;
+			group=importTbl[key];
+if(!group) console.log(lat+' '+lon+' '+keyLat+' '+keyLon);
+
+//			node=group[group.length-off-1];
+			node=group[group.length-off];
+		} else {
+			src=gis.osm.Way.Src.MISS;
+
+//			node=nodeList[nodeSet.count-off-1];
+			node=nodeList[nodeSet.count-off];
+		}
+
+		return(node);
+	}
+
 	pos=stream.pos;
 	src=gis.osm.Way.Src.HDR;
 
@@ -564,6 +606,7 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 		code=dec[0];
 
 		if(code&1) {
+			// New node defined by lat/lon delta.
 			src=ptNum?gis.osm.Way.Src.NEW:gis.osm.Way.Src.NEW1;
 
 			if(node) {
@@ -599,7 +642,8 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 				ptList[ptNum]=ll.toNum();
 				continue;
 			}
-		} else if(code==8) {
+		} else if(code==gis.osm.Way.Code.REF) {
+			// New node defined by position along latest road segment, belonging to a sidewalk or similar.
 			src=gis.osm.Way.Src.REF;
 //lat2=lat;
 //lon2=lon;
@@ -636,33 +680,31 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 
 			ptList[ptNum-1]=node2;
 			node2.addWay(this,ptNum-1);
+
+			// TODO: this would be unnecessary with a better data model for merged lanes.
+			if(!node2.nameRefList) node2.nameRefList=[];
+			node2.nameRefList.push(this);
 //lat=lat2;
 //lon=lon2;
+		} else if(code==gis.osm.Way.Code.NAMEREF) {
+			// Node on a sidewalk or similar, should be associated to this street.
+			// TODO: this would be unnecessary with a better data model for merged lanes.
+			stream.readLong(dec,1);
+
+			node2=parseRef(dec[0]);
+
+			if(!node2.nameRefList) node2.nameRefList=[];
+			node2.nameRefList.push(this);
+
+			src=gis.osm.Way.Src.NAMEREF;
 		} else {
+			// Reference to a previously stored node.
 			if(node) {
 				ptList[ptNum-1]=node;
 				node.addWay(this,ptNum-1);
 			}
-			quad=(code>>1)%5;
-			off=~~(code/10);
 
-			if(quad<4) {
-				src=gis.osm.Way.Src.HIT;
-
-				keyLat=((lat+tileOff)>>tileSize)-(quad&1);
-				keyLon=((lon+tileOff)>>tileSize)-(quad>>1);
-
-				key=keyLat+' '+keyLon;
-				group=importTbl[key];
-
-//				node=group[group.length-off-1];
-				node=group[group.length-off];
-			} else {
-				src=gis.osm.Way.Src.MISS;
-
-//				node=nodeList[nodeSet.count-off-1];
-				node=nodeList[nodeSet.count-off];
-			}
+			node=parseRef(code);
 
 			dlat=(node.ll.llat>>detail)-lat;
 			dlon=(node.ll.llon>>detail)-lon;

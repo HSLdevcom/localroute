@@ -105,10 +105,13 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 		else if(name=='Station' && !isSynonym) {
 			origId=attr['StationId'];
 			ll=new gis.Deg(attr['Y'],attr['X']).toMU();
-			stop=new reach.trans.Stop(origId,attr['Name'],ll);
+//			stop=new reach.trans.Stop(origId,attr['Name'],ll);
 
+//			stopTbl[origId]=stop;
+//			stopSet.insert(stop);
+
+			stop=stopSet.insert(origId,attr['Name'],ll);
 			stopTbl[origId]=stop;
-			stopSet.insert(stop);
 		} else if(name=='Footnote' && attr['Firstdate'] && attr['Vector']) {
 			id=+attr['FootnoteId'];
 			dateParts=attr['Firstdate'].split('-');

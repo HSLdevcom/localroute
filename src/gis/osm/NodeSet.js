@@ -58,8 +58,8 @@ gis.osm.NodeSet.prototype.createNode=function(ll,updateList) {
 
 	node=new gis.osm.Node(ll);
 	if(updateList) {
-		node.id=this.count++;
-		this.list[node.id]=node;
+		node.iterId=this.count;
+		this.list[this.count++]=node;
 	}
 
 	return(node);

@@ -44,6 +44,8 @@ goog.require('gis.osm.TagTable');
 gis.osm.MetaSet=function() {
 	/** @type {Array.<gis.osm.Meta>} */
 	this.list=[];
+	/** @type {Object.<number,gis.osm.Meta>} */
+	this.tbl={};
 };
 
 /** @param {gis.osm.TagTable} tagTbl
@@ -75,6 +77,8 @@ gis.osm.MetaSet.prototype.parseNode=function(tagTbl) {
 };
 
 /** @param {gis.osm.TagTable} tagTbl
+  * @param {Array.<string>} roleList
+  * @param {Array.<gis.osm.Node|gis.osm.Way|number>} memberList
   * @return {gis.osm.Meta} */
 gis.osm.MetaSet.prototype.parseRel=function(tagTbl,roleList,memberList) {
 	var type;

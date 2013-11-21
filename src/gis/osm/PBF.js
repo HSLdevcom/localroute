@@ -320,6 +320,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 					}
 					prevWay=way;
 					way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
+					// If way is cut because part of it is outside the grid, link the parts together.
 					if(prevWay) prevWay.next=way;
 					else wayTbl[+desc['id']]=way;
 				}
@@ -337,6 +338,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 			if(profile) {
 				prevWay=way;
 				way=this.mapSet.waySet.insertNodes(nodeList,profile,name,nodeSet);
+				// If way is cut because part of it is outside the grid, link the parts together.
 				if(prevWay) prevWay.next=way;
 				else wayTbl[+desc['id']]=way;
 			}
@@ -355,6 +357,8 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 	var node;
 	var wayTbl;
 	var way;
+	var metaTbl;
+	var meta;
 	var descNum,descCount;
 	var desc;
 	var typeList;
@@ -372,6 +376,7 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 
 	nodeTbl=nodeSet.tbl;
 	wayTbl=waySet.tbl;
+	metaTbl=metaSet.tbl;
 
 	if(!txtList.length) this.decodeTxtList(txtList,prim.stringtable.s);
 
@@ -418,6 +423,17 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 					roleList[memberCount]='w'+txtList[+roleIdList[idNum]];
 					memberList[memberCount++]=way;
 				}
+			} else if(typeList[idNum]=='RELATION') {
+				// Relations may refer to other relations not yet loaded,
+				// so those references must be stored by ID and resolved only after all relations are loaded.
+				roleList[memberCount]='r'+txtList[+roleIdList[idNum]];
+/*
+console.log(roleList[memberCount]+' '+desc['id']+' '+id);
+for(tagNum=0;tagNum<tagCount;tagNum++) {
+if(typeKeyTbl[+desc['keys'][tagNum]] && keepTypeTbl[+desc['vals'][tagNum]]) console.log(txtList[+desc['vals'][tagNum]]);
+}
+*/
+				memberList[memberCount++]=id;
 			}
 		}
 
@@ -431,7 +447,8 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 			tagTbl.insert(txtList[key],txtList[val]);
 		}
 
-		metaSet.parseRel(tagTbl,roleList,memberList);
+		meta=metaSet.parseRel(tagTbl,roleList,memberList);
+		if(meta) metaTbl[+desc['id']]=meta;
 	}
 };
 

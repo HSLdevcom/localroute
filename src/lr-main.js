@@ -32,6 +32,8 @@ goog.require('reach.trans.TransSet');
 goog.require('reach.trans.GTFS');
 goog.require('gis.osm.MapSet');
 goog.require('gis.osm.PBF');
+goog.require('reach.route.Batch');
+goog.require('reach.route.GeoCoder');
 
 function init() {
 	var dateParts;
@@ -63,11 +65,13 @@ function init() {
 		inPBF:['in-pbf','FILE',null,'Input OpenStreetMap data in Protocol Buffer format'],
 		outMap:['out-map','FILE',null,'Output map data in a squeezed package'],
 		inMap:['in-map','FILE',null,'Input map data in a squeezed package'],
-		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format']
+		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format'],
+		from:['f|from','PLACE',null,'Routing start location'],
+		to:['t|to','PLACE',null,'Routing target location']
 //      verbose:['v|verbose',null,null,'Print more details'],
 //      stops:['stops','LIST',null,'Print cost of a predefined route'],
 //      nostops:['nostops','LIST',null,'Disable some stops'],
-    },[],'LocalRoute.js','1st infrared aardvark');
+    },[],'LocalRoute.js','2nd infrared aardvark');
 
 	opt.parse(process.argv);
 
@@ -194,6 +198,23 @@ function init() {
 			mapSet=new gis.osm.MapSet();
 			stream=new gis.io.PackStream(fs.readFileSync(opt.def.inMap,'utf8'),null);
 			mapSet.importPack(stream);
+			nextTask();
+		});
+	}
+
+	// Routing.
+
+	if(opt.def.from) {
+		taskList.push(function() {
+			var geoCoder;
+			var batch;
+
+			mapSet.waySet.prepareTree();
+
+			geoCoder=new reach.route.GeoCoder(mapSet,transSet);
+			batch=new reach.route.Batch(mapSet,geoCoder);
+			batch.run(opt.def.from);
+
 			nextTask();
 		});
 	}

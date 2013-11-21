@@ -32,8 +32,14 @@ reach.trans.StopSet=function() {
 	this.count=0;
 };
 
-/** @param {reach.trans.Stop} stop */
-reach.trans.StopSet.prototype.insert=function(stop) {
+/** @param {string} origId
+  * @param {string} name
+  * @param {gis.MU} ll
+  * @return {reach.trans.Stop} */
+reach.trans.StopSet.prototype.insert=function(origId,name,ll) {
+	var stop;
+
+	stop=new reach.trans.Stop(origId,name,ll);
 	stop.id=this.count;
 	this.list[this.count++]=stop;
 
@@ -59,7 +65,7 @@ reach.trans.StopSet.prototype.exportTempPack=function(write) {
 /** @param {gis.io.LineStream} stream */
 reach.trans.StopSet.prototype.importTempPack=function(stream) {
 	var txt;
-	var stopList;
+//	var stopList;
 	var stopNum,stopCount;
 	var stop;
 	var fieldList;
@@ -68,20 +74,23 @@ reach.trans.StopSet.prototype.importTempPack=function(stream) {
 	txt=stream.readLine();
 
 	stopCount=+txt;
-	stopList=[];
-	stopList.length=stopCount;
-	this.count=stopCount;
+	this.list=[];
+	this.count=0;
+//	stopList=[];
+//	stopList.length=stopCount;
+//	this.count=stopCount;
 
 	for(stopNum=0;stopNum<stopCount;stopNum++) {
 		fieldList=stream.readLine().split('\t');
 		ll=new gis.MU(+fieldList[2],+fieldList[3]);
-		stop=new reach.trans.Stop(fieldList[1],fieldList[4],ll);
+//		stop=new reach.trans.Stop(fieldList[1],fieldList[4],ll);
+		stop=this.insert(fieldList[1],fieldList[4],ll);
 
 		stop.id=+fieldList[0];
-		stopList[stopNum]=stop;
+//		stopList[stopNum]=stop;
 	}
 
-	this.list=stopList;
+//	this.list=stopList;
 };
 
 /** @param {gis.enc.NameSet} nameSet */
@@ -194,6 +203,7 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 				step++;
 
 				self.list=[];
+				self.count=0;
 
 				dec=/** @type {Array.<number>} */ ([]);
 				stream.readLong(dec,1);
@@ -216,10 +226,11 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 				lon+=gis.Q.toSigned(dec[3]);
 
 				ll=new gis.MU(lat,lon);
-				stop=new reach.trans.Stop(nameSet.list[origId],nameSet.list[nameId],ll);
+//				stop=new reach.trans.Stop(nameSet.list[origId],nameSet.list[nameId],ll);
+				stop=self.insert(nameSet.list[origId],nameSet.list[nameId],ll);
 				stop.followerList=[];
 				stop.statsTo=[];
-				self.insert(stop);
+//				self.insert(stop);
 
 				return(--stopCount);
 		}

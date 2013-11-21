@@ -61,6 +61,9 @@ gis.osm.Node=function(ll) {
 
 	/** @type {gis.osm.Node} */
 	this.replacement;
+
+	/** @type {Array.<gis.osm.Way>} List of nearby ways with names. TODO: this would be unnecessary with a better data model for merged lanes. */
+	this.nameRefList=[];
 };
 
 /** @param {gis.osm.Way} way

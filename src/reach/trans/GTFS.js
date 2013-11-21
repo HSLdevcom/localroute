@@ -137,10 +137,13 @@ reach.trans.GTFS.prototype.importStops=function(stream,done) {
 		} else {
 			id=row[stopCol];
 			ll=new gis.Deg(+row[latCol],+row[lonCol]).toMU();
-			stop=new reach.trans.Stop(row[codeCol],row[nameCol],ll);
+//			stop=new reach.trans.Stop(row[codeCol],row[nameCol],ll);
 
+//			stopTbl[id]=stop;
+//			stopSet.insert(stop);
+
+			stop=stopSet.insert(row[codeCol],row[nameCol],ll);
 			stopTbl[id]=stop;
-			stopSet.insert(stop);
 		}
 	});
 
