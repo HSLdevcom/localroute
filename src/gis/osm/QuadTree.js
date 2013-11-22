@@ -109,8 +109,8 @@ gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,d
 	var stackPos;
 	var nearest,sentinel;
 
-	snapDist/=gis.MU.getScale(lat);
-	angleWeight/=gis.MU.getScale(lat);
+	snapDist/=gis.MU.getScale(lat).north;
+	angleWeight/=gis.MU.getScale(lat).north;
 
 	tileStack=/** @type {Array.<gis.osm.QuadTile>} */ ([root]);
 	stackPos=1;

@@ -143,6 +143,17 @@ gis.osm.Way.prototype.demoteNode=function(pos) {
 	return(num);
 };
 
+/** @param {number} pos
+  * @return {gis.MU} */
+gis.osm.Way.prototype.getLL=function(pos) {
+	var pt;
+
+	pt=this.ptList[pos];
+	// Don't use gis.MU.ll.fromNum(pt) here because caller might not expect previously returned value to change after new call.
+	if(typeof(pt)=='number') return(gis.MU.fromNum(pt));
+	else return(pt.ll);
+};
+
 /** @return {gis.geom.BB} */
 gis.osm.Way.prototype.getBB=function() {
 	var ptList;
@@ -253,7 +264,7 @@ gis.osm.Way.prototype.simplify=function(tolerance) {
 	var bb;
 
 	bb=this.getBB();
-	scale=gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1));
+	scale=gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1)).north;
 	minDist=tolerance/scale;
 	minDist*=minDist;
 
@@ -853,10 +864,10 @@ gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dla
 //console.log('\t'+pos+' '+posPrev);
 			nearest.pos=posPrev;
 			nearest.posNext=pos;
-nearest.offset=offset;
+			nearest.offset=offset;
 // Debug lane merging.
-nearest.lat=dlat2+latSrc;
-nearest.lon=dlon2+lonSrc;
+//nearest.lat=dlat2+latSrc;
+//nearest.lon=dlon2+lonSrc;
         }
 
 		posPrev=pos;

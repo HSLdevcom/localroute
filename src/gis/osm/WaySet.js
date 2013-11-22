@@ -965,7 +965,7 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 		way.nearWayList=[];
 		way.nearPosList=[];
 
-		off=maxDist/gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1));  // Adjust scale for Mercator distortion.
+		off=maxDist/gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1)).north;  // Adjust scale for Mercator distortion.
 		// Look for nearby ways in the quadtree as far from the root as possible for speed.
 		// Start from a tile containing the entire way to match, expanded with a maxDist-sized buffer.
 		tile=tree.findEnclosing(new gis.geom.BB(bb.lat1-off,bb.lon1-off,bb.lat2+off,bb.lon2+off));
