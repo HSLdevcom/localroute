@@ -38,8 +38,36 @@ reach.route.Batch=function(mapSet,geoCoder) {
 
 /** @param {string} addrFrom */
 reach.route.Batch.prototype.run=function(addrFrom) {
+	var conf;
+	var profileAccessList;
+	var profileList;
+	var	profileNum,profileCount;
+	var profile;
+	var flag;
 	var locFrom;
 
+	conf=new reach.route.Conf();
+
+	profileAccessList=[];
+	profileList=this.mapSet.profileSet.wayProfileList;
+	profileCount=profileList.length;
+
+	for(profileNum=0;profileNum<profileCount;profileNum++) {
+		profile=profileList[profileNum];
+		profile.id=profileNum;
+
+		if(profile.access&gis.osm.ProfileSet.access.FOOT) {
+			if(profile.limit&gis.osm.ProfileSet.access.FOOT) flag=0.5;
+			else flag=1;
+		} else flag=0;
+
+		profileAccessList[profileNum]=flag;
+	}
+
+	conf.profileAccessList=profileAccessList;
+
 	locFrom=this.geoCoder.find(addrFrom);
-	this.dijkstra.start([locFrom],new reach.route.Conf());
+	this.dijkstra.start([locFrom],conf);
+
+	while(!this.dijkstra.step()) {}
 };

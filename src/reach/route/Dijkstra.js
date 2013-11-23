@@ -33,13 +33,18 @@ reach.route.Dijkstra=function() {
 	/** @type {number} */
 	this.runId=0;
 
-	/** @type {number} Stop Dijkstra when cost becomes too large */
-	this.maxCost=0;
-
 	/** @type {reach.route.Dijkstra.Dir} Direction of time as cost increases, boolean enum. */
 	this.dir=reach.route.Dijkstra.Dir.FORWARD;
 	/** @type {number} Direction of time as cost increases, multiplication factor 1 or -1. */
 	this.timeDelta=1;
+
+	/** @type {number} */
+	this.maxCost;
+
+	/** @type {Array.<number>} */
+	this.costList;
+	/** @type {Array.<number>} */
+	this.srcList;
 };
 
 /** @enum {boolean} */
@@ -55,19 +60,24 @@ reach.route.Dijkstra.prototype.start=function(locList,conf) {
 	var loc;
 	var visitorList;
 	var visitorNum,visitorCount;
+	var visitor;
 
 	this.runId++;
 	this.conf=conf;
 
+	conf.init();
 	this.maxCost=conf.maxCost;
 	this.queue=new gis.data.RadixHeap(this.maxCost);
+
+	this.costList=[];
+	this.srcList=[];
 
 	// Get all visitor objects for all start locations and insert them into the priority queue.
 	locCount=locList.length;
 	for(locNum=0;locNum<locCount;locNum++) {
 		loc=locList[locNum];
 
-		visitorList=loc.getVisitors();
+		visitorList=loc.getVisitors(this,conf,1,0);
 		visitorCount=visitorList.length;
 
 		for(visitorNum=0;visitorNum<visitorCount;visitorNum++) {

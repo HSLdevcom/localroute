@@ -40,16 +40,16 @@ reach.trans.Stop=function(origId,name,ll) {
 	/** @type {Array.<number>} How many stops are passed along each stop sequence before reaching this stop. */
 	this.posList=[];
 
-    /** @type {Object.<reach.trans.Trip.Mode,boolean>} */
-    this.transModeTbl;
+	/** @type {Object.<reach.trans.Trip.Mode,boolean>} */
+//	this.transModeTbl;
 
 	// Routing data to store how stop was reached etc.
 	/** @type {number} */
-	this.runId;
+//	this.runId;
 	/** @type {number} */
-	this.cost;
+//	this.cost;
 	/** @type {number} */
-	this.time;
+//	this.time;
 
 	// Time table statistics used when compressing and decompressing.
 	/** @type {Object.<number,number>} */
@@ -64,10 +64,10 @@ reach.trans.Stop=function(origId,name,ll) {
 	this.packCount;
 
 	/** @type {number} Number of departures around search start time, to evaluate stop niceness. */
-	this.departureCount;
+//	this.departureCount;
 
 	/** @type {boolean} */
-	this.disabled;
+//	this.disabled;
 };
 
 /** @return {Array.<{time:number,trip:reach.trans.Trip}>} */

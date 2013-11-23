@@ -77,7 +77,7 @@ gis.MU.getScale=function(lat) {
 	var factor;
 	var f,t;
 
-	scale=gis.MU.scaleTbl[~~(lat*128+90*128+0.5)];
+	scale=gis.MU.scaleTbl[(lat+(1<<(gis.MU.bits-17)))>>>(gis.MU.bits-16)];
 	if(!scale) {
 		// Tangent of latitude.
 		t=Math.exp((lat/gis.MU.range*2-1)*Math.PI);
@@ -95,7 +95,7 @@ gis.MU.getScale=function(lat) {
 			east:(1+( t+f )/2)/factor
 		};
 
-		gis.MU.scaleTbl[~~(lat*128+90*128+0.5)]=scale;
+		gis.MU.scaleTbl[(lat+(1<<(gis.MU.bits-17)))>>>(gis.MU.bits-16)]=scale;
 	}
 
 	return(scale);

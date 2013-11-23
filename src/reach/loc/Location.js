@@ -37,5 +37,9 @@ reach.loc.Location=function() {
 	this.fieldList;
 };
 
-/** @return {Array.<reach.route.Visitor>} */
-reach.loc.Location.prototype.getVisitors=function() {};
+/** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Conf} conf
+  * @param {number} cost
+  * @param {number} time
+  * @return {Array.<reach.route.Visitor>} */
+reach.loc.Location.prototype.getVisitors=function(dijkstra,conf,cost,time) {};

@@ -39,17 +39,17 @@ reach.trans.Seq=function() {
 	this.tripCount=0;
 
 	/** @type {Object.<number,number>} Used to filter out line if none of its trips use an allowed mode of transportation. */
-	this.transModeTbl={};
+//	this.transModeTbl={};
 
 	/** @type {number} */
-	this.runId=0;
+//	this.runId=0;
 	/** @type {number} */
-	this.firstPos=0;
+//	this.firstPos=0;
 	/** @type {Array.<number>} */
-	this.costList=[];
+//	this.costList=[];
 	/** @type {Array.<number>} */
-	this.timeList=[];
+//	this.timeList=[];
 
 	/** @type {number} Number of departures around search start time, to evaluate line niceness. */
-	this.departureCount=0;
+//	this.departureCount=0;
 };

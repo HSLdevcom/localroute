@@ -45,6 +45,7 @@ function init() {
 	var gtfs;
 	var opt;
 	var taskList;
+	var context;
 	var fd;
 
 	eval("fs=require('fs');");
@@ -67,7 +68,8 @@ function init() {
 		inMap:['in-map','FILE',null,'Input map data in a squeezed package'],
 		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format'],
 		from:['f|from','PLACE',null,'Routing start location'],
-		to:['t|to','PLACE',null,'Routing target location']
+		to:['t|to','PLACE',null,'Routing target location'],
+		debug:['debug','',null,'Debug']
 //      verbose:['v|verbose',null,null,'Print more details'],
 //      stops:['stops','LIST',null,'Print cost of a predefined route'],
 //      nostops:['nostops','LIST',null,'Disable some stops'],
@@ -208,12 +210,28 @@ function init() {
 		taskList.push(function() {
 			var geoCoder;
 			var batch;
+			var wayNum;
+			var dataPtr;
+
+			wayNum=0;
+			dataPtr=0;
 
 			mapSet.waySet.prepareTree();
+			mapSet.waySet.forWays(function(way) {
+				way.calcDist();
+				way.getNodes();
+
+				way.iterId=wayNum++;
+				way.dataPtr=dataPtr;
+
+				dataPtr+=way.nodeList.length;
+			});
 
 			geoCoder=new reach.route.GeoCoder(mapSet,transSet);
 			batch=new reach.route.Batch(mapSet,geoCoder);
+//globalFoo=0;
 			batch.run(opt.def.from);
+//console.log(globalFoo+' '+mapSet.nodeSet.list.length+' '+dataPtr);
 
 			nextTask();
 		});
@@ -245,8 +263,12 @@ function init() {
 
 	nextTask();
 
-	// Useful for debugging:
-	// require('repl').start('> ').context.gis=gis;
+	if(opt.def.debug) {
+		// Useful for debugging:
+		context=require('repl').start('> ').context;
+		context.gis=gis;
+		context.reach=reach;
+	}
 }
 
 if(typeof(process)!='undefined' && process.argv && typeof(process.argv[1])=='string' && process.argv[1].match(/(^|[/])lr.js$/)) {

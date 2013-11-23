@@ -20,6 +20,7 @@
 goog.provide('reach.loc.Outdoor');
 goog.require('gis.Obj');
 goog.require('reach.loc.Location');
+goog.require('reach.route.WayVisitor');
 goog.require('gis.osm.MapSet');
 
 /** @constructor
@@ -46,22 +47,97 @@ reach.loc.Outdoor=function(ll,mapSet) {
 
 gis.inherit(reach.loc.Outdoor,reach.loc.Location);
 
-/** @return {Array.<reach.route.Visitor>} */
-reach.loc.Outdoor.prototype.getVisitors=function() {
+/** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Conf} conf
+  * @param {number} cost
+  * @param {number} time
+  * @return {Array.<reach.route.Visitor>} */
+reach.loc.Outdoor.prototype.getVisitors=function(dijkstra,conf,cost,time) {
+	var visitorList;
 	var nearest;
+	var way;
+	var posPrev,posNext;
+	var nodeNum;
+	var ptList;
+	var ptNum,ptCount;
+	var ll;
+	var lat,lon;
+	var offset;
+	var distPrev,distNext,distTo,distAlong;
+	var dist;
 
-console.log(this.ll);
+	visitorList=[];
 
-	// TODO: the magic number here comes from conf.snapDist
-	nearest=this.mapSet.waySet.tree.findWay(this.ll.llat,this.ll.llon,null,500,this.mapSet.waySet.tree.root,0,0,0,function(way) {
-		return((way.profile.access&gis.osm.ProfileSet.access.FOOT) && !(way.profile.limit&gis.osm.ProfileSet.access.FOOT));
+	// TODO: Clearly this function takes too many parameters, root and 0,0,0 are useless here.
+	nearest=this.mapSet.waySet.tree.findWay(this.ll.llat,this.ll.llon,null,conf.snapDist,this.mapSet.waySet.tree.root,0,0,0,function(way) {
+		var flag;
+		flag=conf.profileAccessList[way.profile.id];
+		if(!flag) return(0);
+
+		// Arbitrary magic number: add 20 meters to distance if accessibility is 0.5.
+		return(20/flag-20+1);
 	});
+
+	way=nearest.way;
+
+	if(way) {
+		posPrev=nearest.pos;
+		posNext=nearest.posNext;
+
+		distNext=way.distList[posNext];
+		distPrev=way.distList[posPrev];
+
+		nodeNum=-1;
+		ptList=way.ptList;
+		ptCount=ptList.length;
+
+		// Find number of previous node before point nearest this location along way.
+		for(ptNum=way.ptStart;ptNum<ptCount;ptNum++) {
+			pt=ptList[ptNum];
+			if(!pt) continue;
+
+			if(typeof(pt)!='number') nodeNum++;
+
+			if(ptNum==posPrev) {
+				posPrev=nodeNum;
+				ptNum++;
+				break;
+			}
+		}
+
+		// Find number of next node.
+		for(;ptNum<ptCount;ptNum++) {
+			pt=ptList[ptNum];
+			if(!pt) continue;
+
+			if(typeof(pt)!='number') {
+				nodeNum++;
+				posNext=nodeNum;
+				break;
+			}
+		}
+
+		if(ptNum==ptCount) return(visitorList);
+
+		// Assert: way.ptList[ptNum]==way.nodeList[posNext] && ptNum>=nearest.posNext
+
+		ll=new gis.MU(nearest.lat,nearest.lon);
+		distTo=this.ll.distTo(ll);
+		distAlong=distNext-distPrev;
+		offset=nearest.offset;
+
+		dist=distTo+distAlong*offset+(distPrev-way.nodeDistList[posPrev]);
+		visitorList.push(reach.route.WayVisitor.create(dijkstra,way,posPrev,-1,cost+dist*conf.walkCostPerM,time+dist*conf.walkTimePerM));
+
+		dist=distTo+distAlong*(1-offset)+(way.nodeDistList[posNext]-distNext);
+		visitorList.push(reach.route.WayVisitor.create(dijkstra,way,posNext,1,cost+dist*conf.walkCostPerM,time+dist*conf.walkTimePerM));
+	}
 
 	console.log(nearest.pos);
 	console.log(nearest.posNext);
-	console.log(nearest.way.name);
-	console.log(nearest.way.ptList[nearest.pos].nameRefList.map(function(way) {return(way.name);}).join(' '));
-	console.log(nearest.way.ptList[nearest.posNext].nameRefList.map(function(way) {return(way.name);}).join(' '));
+//	console.log(nearest.way.name);
+//	console.log(nearest.way.ptList[nearest.pos].nameRefList.map(function(way) {return(way.name);}).join(' '));
+//	console.log(nearest.way.ptList[nearest.posNext].nameRefList.map(function(way) {return(way.name);}).join(' '));
 
-	return([]);
+	return(visitorList);
 };

@@ -82,7 +82,7 @@ gis.osm.ProfileSet=function() {
 		t.FOOTWAY, 'footway bus_stop platform',
 		t.FOOTWAY, 'crossing',
 		t.PATH,    'path bridleway',
-		t.STAIRS,  'escalator steps',	// TODO: these should have different cost, walking on stairs is less fun.
+		t.STAIRS,  'steps escalator',	// TODO: these should have different cost, walking on stairs is less fun.
 		t.PARKING, 'services'
 	];
 
@@ -108,7 +108,7 @@ gis.osm.ProfileSet=function() {
 
 	// Modes for transport allowed by default for each way type.
 	// c=car, b=bike, f=foot, w=wheelchair. Capitals mean more suitable.
-	accessList=/** @type {Array.<gis.osm.WayProfile.Type|string>} */ ([			// TODO: these should be integers on a scale 0-9 or .oO or .-+#
+	accessList=/** @type {Array.<gis.osm.WayProfile.Type|string>} */ ([			// TODO: these should be integers on a scale 0-8.
 		t.HIGHWAY, 'C',
 		t.HIGHLINK, 'C',
 		t.FASTCARS,'Cb',	// TODO: it's possible to go on foot on roadside if no other way exists, so allow with high penalty.
