@@ -55,20 +55,22 @@ function init() {
 
 	opt=new gis.util.Opt({
 		date:['D|date','DATE',null,'Start date in yyyy-mm-dd format, default today'],
-		days:['d|days','DATE',null,'Number of days to include in schedule'],
+		days:['days','COUNT',30,'Number of days to include in schedule'],
 		inGTFS:['in-gtfs','FILE',null,'Input public transport data in Google Transit Feed Specification format'],
 		inKalkati:['in-kalkati','FILE',null,'Input public transport data in Kalkati XML format'],
 		outTransTemp:['out-tempt','FILE',null,'Output public transport data in human-readable intermediate format'],
 		inTransTemp:['in-tempt','FILE',null,'Input public transport data in human-readable intermediate format'],
 		outTrans:['out-trans','FILE',null,'Output public transport data in a squeezed package'],
-		inTrans:['T|in-trans','FILE',null,'Onput public transport data in a squeezed package'],
+		inTrans:['T|in-trans','FILE',null,'Input public transport data in a squeezed package'],
 		mapRound:['map-round','INTEGER',2,'Bits of precision to discard in coordinate compression'],
 		inPBF:['in-pbf','FILE',null,'Input OpenStreetMap data in Protocol Buffer format'],
 		outMap:['out-map','FILE',null,'Output map data in a squeezed package'],
-		inMap:['in-map','FILE',null,'Input map data in a squeezed package'],
+		inMap:['M|in-map','FILE',null,'Input map data in a squeezed package'],
 		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format'],
 		from:['f|from','PLACE',null,'Routing start location'],
 		to:['t|to','PLACE',null,'Routing target location'],
+		depart:['d|depart','TIME',null,'Routing departure time'],
+		arrive:['a|arrive','TIME',null,'Routing arrival time'],
 		debug:['debug','',null,'Debug']
 //      verbose:['v|verbose',null,null,'Print more details'],
 //      stops:['stops','LIST',null,'Print cost of a predefined route'],
@@ -86,7 +88,6 @@ function init() {
 	}
 
 	dayCount=opt.def.days;
-	if(!dayCount) dayCount=30;
 
 	taskList=[];
 
@@ -134,6 +135,7 @@ function init() {
 			transSet=new reach.trans.TransSet();
 			stream=new gis.io.PackStream(fs.readFileSync(opt.def.inTrans,'utf8'),null);
 			transSet.importPack(stream);
+			console.log('Transit data start '+transSet.date.toString());
 			nextTask();
 		});
 	}
@@ -268,6 +270,8 @@ function init() {
 		context=require('repl').start('> ').context;
 		context.gis=gis;
 		context.reach=reach;
+		context.transSet=transSet;
+		context.mapSet=mapSet;
 	}
 }
 
