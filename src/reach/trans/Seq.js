@@ -29,14 +29,18 @@ reach.trans.Seq=function() {
 
 	/** @type {Array.<reach.trans.Stop>} */
 	this.stopList=[];
+	/** @type {Array.<number>} */
+//	this.distList=[];
 	/** @type {Array.<reach.trans.Trip>} */
 	this.tripList=[];
-	/** @type {Array.<number>} */
-	this.distList=[];
+	/** @type {Array.<reach.trans.Trip>} */
+	this.stampList=[];
+	/** @type {Array.<reach.trans.Trip>} */
+//	this.newTripList=[];
 	/** @type {Array.<number>} */
 	this.followerList;
 	/** @type {number} */
-	this.tripCount=0;
+//	this.tripCount=0;
 
 	/** @type {Object.<number,number>} Used to filter out line if none of its trips use an allowed mode of transportation. */
 //	this.transModeTbl={};

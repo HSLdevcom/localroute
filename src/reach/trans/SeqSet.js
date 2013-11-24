@@ -127,18 +127,46 @@ reach.trans.SeqSet.prototype.clearTrips=function() {
 reach.trans.SeqSet.prototype.sortTrips=function() {
 	var seqList;
 	var seqNum,seqCount;
+	var seq;
+	var stampList;
+	var tripList;
+	var tripNum,tripCount;
+	var trip;
+	var tripRefList;
 
-	/** @param {reach.trans.Trip} a
-	  * @param {reach.trans.Trip} b */
+	/** @param {{stamp:number,trip:reach.trans.Trip}} a
+	  * @param {{stamp:number,trip:reach.trans.Trip}} b */
 	function compareTrips(a,b) {
-		return(a.startTime-b.startTime);
+		return(a.stamp-b.stamp);
 	}
 
 	seqList=this.list;
 	seqCount=this.count;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
-		seqList[seqNum].tripList.sort(compareTrips);
+		seq=seqList[seqNum];
+		tripRefList=[];
+
+		stampList=seq.stampList;
+		tripList=seq.tripList;
+		tripCount=tripList.length;
+
+		for(tripNum=0;tripNum<tripCount;tripNum++) {
+			tripRefList[tripNum]={stamp:stampList[tripNum],trip:tripList[tripNum]};
+		}
+
+		tripRefList.sort(compareTrips);
+
+		for(tripNum=0;tripNum<tripCount;tripNum++) {
+			stampList[tripNum]=tripRefList[tripNum].stamp;
+			tripList[tripNum]=tripRefList[tripNum].trip;
+		}
+/*
+		for(tripNum=0;tripNum<tripCount;tripNum++) {
+			trip=tripList[tripNum];
+			if(trip.key.shortCode=='65N') console.log(new Date(stampList[tripNum])+' '+trip.key.shortCode+' '+trip.key.sign);
+		}
+*/
 	}
 };
 

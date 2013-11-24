@@ -384,15 +384,21 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 };
 
 /** Add trips to their respective stop sequences.
-  * @param {number} mask */
-reach.trans.TripSet.prototype.bindSeqs=function(mask) {
-	var validList;
+  * @param {number} day
+  * @param {number} minFirst
+  * @param {number} minLast
+  * @param {number} stamp */
+reach.trans.TripSet.prototype.bindSeqs=function(day,minFirst,minLast,stamp) {
+	var mask;
 	var validGroupList;
+	var validList;
 	var validNum,validCount;
 	var tripList;
 	var tripNum,tripCount;
 	var trip;
 	var seq;
+
+	mask=1<<day;
 
 	validGroupList=this.validGroupList;
 	validList=this.validList;
@@ -409,6 +415,7 @@ reach.trans.TripSet.prototype.bindSeqs=function(mask) {
 			seq=trip.key.seq;
 
 			seq.tripList.push(trip);
+			seq.stampList.push(stamp+trip.startTime*1000);
 		}
 	}
 };

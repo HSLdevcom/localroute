@@ -53,7 +53,7 @@ reach.trans.Stop=function(origId,name,ll) {
 
 	// Time table statistics used when compressing and decompressing.
 	/** @type {Object.<number,number>} */
-	this.followerTbl;
+//	this.followerTbl;
 	/** @type {Array.<reach.trans.Stop>} */
 	this.followerList;
 	/** @type {number} */

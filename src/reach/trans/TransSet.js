@@ -176,13 +176,53 @@ reach.trans.TransSet.prototype.importData=function(data) {
 	this.importPack(stream);
 };
 
-/** @param {gis.util.Date} date */
-reach.trans.TransSet.prototype.prepareDay=function(date) {
-	var mask;
+/** @param {number} first Unix timestamp, milliseconds from 1970-01-01 00:00 UTC.
+  * @param {number} last */
+reach.trans.TransSet.prototype.prepare=function(first,last) {
+	var offset;
+	var jdFirst,jdLast,jd;
+	var noon;
+	var minFirst,minLast;
+	var date;
 
-	mask=1<<(date.jd-this.date.jd);
+	// TODO: offset should be in transit feed timezone, not local timezone.
+	// Get offset from UTC for start time.
+	offset=new Date(first).getTimezoneOffset();
+	// Get days from 1970-01-01 to first day to load.
+	jdFirst=~~((first/60000-offset)/1440);
+
+	// Calculate timestamp approximately at noon, when daylight savings offset should be the same as during most of the day.
+	// If daylight savings changes between start time and next noon, this may be off by an hour or so.
+	noon=(jdFirst*1440+offset+720)*60000;
+
+	// Get offset from UTC for end time.
+	offset=new Date(last).getTimezoneOffset();
+	// Get days from 1970-01-01 to last day to load.
+	jdLast=~~((last/60000-offset)/1440);
 
 	this.seqSet.clearTrips();
-	this.tripSet.bindSeqs(mask);
+
+	for(jd=jdFirst;jd<=jdLast;jd++) {
+		// Recalculate exact timestamp at noon by checking UTC offset near midday.
+		offset=new Date(noon).getTimezoneOffset();
+		noon=(jd*1440+offset+720)*60000;
+
+		if(jd==jdFirst) {
+			// Calculate number of minutes from 12 hours before noon.
+			minFirst=~~((first-noon)/60000+720);
+		} else minFirst=0;
+
+		if(jd==jdLast) {
+			// Calculate number of minutes from 12 hours before noon.
+			minLast=~~((last-noon)/60000+720);
+		} else minLast=1440;
+
+		console.log(new gis.util.Date(jd+719163).toString()+' '+gis.Q.zeroPad(~~(minFirst/60),2)+':'+gis.Q.zeroPad(minFirst%60,2)+' - '+gis.Q.zeroPad(~~(minLast/60),2)+':'+gis.Q.zeroPad(minLast%60,2)+' '+offset);
+		this.tripSet.bindSeqs(jd+719163-this.date.jd,minFirst,minLast,noon-720*60000);
+
+		noon+=1440*60000;
+	}
+
 	this.seqSet.sortTrips();
+//	transSet.prepare(1385244000000-1-40*1440*60000,1385244000000+26*60*60000-40*1440*60000)
 };
