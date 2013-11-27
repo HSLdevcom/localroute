@@ -40,6 +40,8 @@ function init() {
 	var dateStart;
 	var dateSys;
 	var dayCount;
+	var timeParts;
+	var depart,arrive;
 	var transSet;
 	var mapSet;
 	var gtfs;
@@ -58,6 +60,8 @@ function init() {
 		days:['days','COUNT',30,'Number of days to include in schedule'],
 		inGTFS:['in-gtfs','FILE',null,'Input public transport data in Google Transit Feed Specification format'],
 		inKalkati:['in-kalkati','FILE',null,'Input public transport data in Kalkati XML format'],
+		outGTFSGeom:['out-gtfs-geom','FILE',null,'Output GTFS transit line geometry'],
+		inGTFSGeom:['in-gtfs-geom','FILE',null,'Input GTFS transit line geometry'],
 		outTransTemp:['out-tempt','FILE',null,'Output public transport data in human-readable intermediate format'],
 		inTransTemp:['in-tempt','FILE',null,'Input public transport data in human-readable intermediate format'],
 		outTrans:['out-trans','FILE',null,'Output public transport data in a squeezed package'],
@@ -67,9 +71,10 @@ function init() {
 		outMap:['out-map','FILE',null,'Output map data in a squeezed package'],
 		inMap:['M|in-map','FILE',null,'Input map data in a squeezed package'],
 		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format'],
+		bindTrans:['bind-trans','',null,'Bind public transport data with map data'],
 		from:['f|from','PLACE',null,'Routing start location'],
 		to:['t|to','PLACE',null,'Routing target location'],
-		depart:['d|depart','TIME',null,'Routing departure time'],
+		depart:['d|depart','TIME',null,'Routing departure time, default now'],
 		arrive:['a|arrive','TIME',null,'Routing arrival time'],
 		debug:['debug','',null,'Debug']
 //      verbose:['v|verbose',null,null,'Print more details'],
@@ -78,16 +83,28 @@ function init() {
     },[],'LocalRoute.js','2nd infrared aardvark');
 
 	opt.parse(process.argv);
+	dateSys=new Date();
 
 	if(opt.def.date) {
 		dateParts=opt.def.date.split('-');
 		if(dateParts.length==3) dateStart=gis.util.Date.fromYMD(+dateParts[0],+dateParts[1],+dateParts[2]);
 	} else {
-		dateSys=new Date();
 		dateStart=gis.util.Date.fromYMD(dateSys.getFullYear(),dateSys.getMonth()+1,dateSys.getDate());
 	}
 
 	dayCount=opt.def.days;
+
+	if(opt.def.depart) {
+		timeParts=opt.def.depart.split(':');
+		depart=new Date(dateStart.year,dateStart.month-1,dateStart.day,+timeParts[0],+timeParts[1],+timeParts[2]||0,0).getTime();
+	} else if(opt.def.arrive) {
+		timeParts=opt.def.arrive.split(':');
+		arrive=new Date(dateStart.year,dateStart.month-1,dateStart.day,+timeParts[0],+timeParts[1],+timeParts[2]||0,0).getTime();
+	} else {
+		depart=new Date(dateStart.year,dateStart.month-1,dateStart.day,dateSys.getHours(),dateSys.getMinutes(),dateSys.getSeconds(),0).getTime();
+	}
+
+//	depart-=new Date((dateStart*1440+offset+720)*60000).getTimezoneOffset()*60000;
 
 	taskList=[];
 
@@ -140,6 +157,16 @@ function init() {
 		});
 	}
 
+	if(opt.def.inGTFSGeom) {
+		taskList.push(function() {
+			var stream;
+
+			stream=new gis.io.PackStream(fs.readFileSync(opt.def.inGTFSGeom,'utf8'),null);
+			transSet.shapeSet.importPack(stream,transSet.seqSet);
+			nextTask();
+		});
+	}
+
 	// Public transport output.
 
 	if(opt.def.outTransTemp) {
@@ -160,6 +187,17 @@ function init() {
 			transSet.exportPack(stream);
 			fs.closeSync(fd);
 			nextTask();
+		});
+	}
+
+	if(opt.def.outGTFSGeom) {
+		taskList.push(function() {
+			var stream;
+
+			fd=fs.openSync(opt.def.outGTFSGeom,'w');
+			stream=new gis.io.PackStream(null,write);
+			transSet.shapeSet.exportPack(stream,+opt.def.mapRound);
+			fs.closeSync(fd);
 		});
 	}
 
@@ -206,6 +244,32 @@ function init() {
 		});
 	}
 
+	// Processing.
+
+	if(opt.def.bindTrans) {
+		taskList.push(function() {
+/*
+			var seqList;
+			var seqNum,seqCount;
+			var seq;
+
+			seqList=transSet.seqSet.list;
+			seqCount=seqList.length;
+
+			fd=fs.openSync('shape.txt','w');
+			stream=new gis.io.PackStream(null,write);
+
+			for(seqNum=0;seqNum<seqCount;seqNum++) {
+				seq=seqList[seqNum];
+				console.log(seqNum+' '+seq.shapeList.length+' '+(seq.shapeList.length?seq.shapeList[0].seqList.length:''));
+				if(seq.shapeList.length) seq.shapeList[0].exportPack(stream,+opt.def.mapRound);
+			}
+
+			fs.closeSync(fd);
+*/
+		});
+	}
+
 	// Routing.
 
 	if(opt.def.from) {
@@ -217,6 +281,8 @@ function init() {
 
 			wayNum=0;
 			dataPtr=0;
+
+			transSet.prepare(depart-4*60*60000,depart+8*60*60000);
 
 			mapSet.waySet.prepareTree();
 			mapSet.waySet.forWays(function(way) {
@@ -247,7 +313,7 @@ function init() {
 
 			fd=fs.openSync(opt.def.outMap,'w');
 			stream=new gis.io.PackStream(null,write);
-			mapSet.waySet.detail=2;
+			mapSet.waySet.detail=+opt.def.mapRound;
 			mapSet.exportPack(stream);
 			fs.closeSync(fd);
 			nextTask();

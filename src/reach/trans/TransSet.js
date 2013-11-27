@@ -22,6 +22,7 @@ goog.require('reach.trans.StopSet');
 goog.require('reach.trans.SeqSet');
 goog.require('reach.trans.KeySet');
 goog.require('reach.trans.TripSet');
+goog.require('reach.trans.ShapeSet');
 goog.require('gis.io.LineStream');
 goog.require('gis.enc.NameSet');
 goog.require('gis.enc.CRC32');
@@ -41,6 +42,8 @@ reach.trans.TransSet=function(date) {
 	this.keySet=new reach.trans.KeySet();
 	/** @type {reach.trans.TripSet} */
 	this.tripSet=new reach.trans.TripSet();
+	/** @type {reach.trans.ShapeSet} */
+	this.shapeSet=new reach.trans.ShapeSet();
 };
 
 /** @param {function(string)} write */
@@ -176,20 +179,22 @@ reach.trans.TransSet.prototype.importData=function(data) {
 	this.importPack(stream);
 };
 
-/** @param {number} first Unix timestamp, milliseconds from 1970-01-01 00:00 UTC.
+/** Load and sort all bus departures within a time range.
+  * @param {number} first Unix timestamp, milliseconds from 1970-01-01 00:00 UTC.
   * @param {number} last */
 reach.trans.TransSet.prototype.prepare=function(first,last) {
 	var offset;
 	var jdFirst,jdLast,jd;
 	var noon;
-	var minFirst,minLast;
+	var secFirst,secLast;
 	var date;
 
 	// TODO: offset should be in transit feed timezone, not local timezone.
 	// Get offset from UTC for start time.
 	offset=new Date(first).getTimezoneOffset();
 	// Get days from 1970-01-01 to first day to load.
-	jdFirst=~~((first/60000-offset)/1440);
+	// Start from 360 minutes before time range to load, because times after midnight might be stored in previous day with hour>24.
+	jdFirst=~~((first/60000-offset-360)/1440);
 
 	// Calculate timestamp approximately at noon, when daylight savings offset should be the same as during most of the day.
 	// If daylight savings changes between start time and next noon, this may be off by an hour or so.
@@ -206,23 +211,12 @@ reach.trans.TransSet.prototype.prepare=function(first,last) {
 		// Recalculate exact timestamp at noon by checking UTC offset near midday.
 		offset=new Date(noon).getTimezoneOffset();
 		noon=(jd*1440+offset+720)*60000;
-
-		if(jd==jdFirst) {
-			// Calculate number of minutes from 12 hours before noon.
-			minFirst=~~((first-noon)/60000+720);
-		} else minFirst=0;
-
-		if(jd==jdLast) {
-			// Calculate number of minutes from 12 hours before noon.
-			minLast=~~((last-noon)/60000+720);
-		} else minLast=1440;
-
-		console.log(new gis.util.Date(jd+719163).toString()+' '+gis.Q.zeroPad(~~(minFirst/60),2)+':'+gis.Q.zeroPad(minFirst%60,2)+' - '+gis.Q.zeroPad(~~(minLast/60),2)+':'+gis.Q.zeroPad(minLast%60,2)+' '+offset);
-		this.tripSet.bindSeqs(jd+719163-this.date.jd,minFirst,minLast,noon-720*60000);
+		// GTFS times are defined as starting from 12 hours before noon.
+		this.tripSet.bindSeqs(jd+719163-this.date.jd,noon-720*60000,first,last);
 
 		noon+=1440*60000;
 	}
 
 	this.seqSet.sortTrips();
-//	transSet.prepare(1385244000000-1-40*1440*60000,1385244000000+26*60*60000-40*1440*60000)
+//	transSet.prepare(1385240400000-1-40*1440*60000,1385244000000+26*60*60000-40*1440*60000)
 };

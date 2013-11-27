@@ -41,6 +41,8 @@ reach.trans.Seq=function() {
 	this.followerList;
 	/** @type {number} */
 //	this.tripCount=0;
+   /** @type {Array.<reach.trans.Shape>} */
+    this.shapeList=[];
 
 	/** @type {Object.<number,number>} Used to filter out line if none of its trips use an allowed mode of transportation. */
 //	this.transModeTbl={};

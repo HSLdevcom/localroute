@@ -385,10 +385,10 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 
 /** Add trips to their respective stop sequences.
   * @param {number} day
-  * @param {number} minFirst
-  * @param {number} minLast
-  * @param {number} stamp */
-reach.trans.TripSet.prototype.bindSeqs=function(day,minFirst,minLast,stamp) {
+  * @param {number} dayStamp
+  * @param {number} first
+  * @param {number} last */
+reach.trans.TripSet.prototype.bindSeqs=function(day,dayStamp,first,last) {
 	var mask;
 	var validGroupList;
 	var validList;
@@ -396,9 +396,11 @@ reach.trans.TripSet.prototype.bindSeqs=function(day,minFirst,minLast,stamp) {
 	var tripList;
 	var tripNum,tripCount;
 	var trip;
+	var stamp;
 	var seq;
 
 	mask=1<<day;
+//console.log(new Date(dayStamp));
 
 	validGroupList=this.validGroupList;
 	validList=this.validList;
@@ -412,10 +414,13 @@ reach.trans.TripSet.prototype.bindSeqs=function(day,minFirst,minLast,stamp) {
 
 		for(tripNum=0;tripNum<tripCount;tripNum++) {
 			trip=tripList[tripNum];
-			seq=trip.key.seq;
+			stamp=dayStamp+trip.startTime*1000;
+			if(stamp<first || stamp>last) continue;
+//			if(trip.key.shortCode=='65N') console.log(trip.key.shortCode+' '+trip.key.sign+' '+trip.startTime+' '+new Date(stamp));
 
+			seq=trip.key.seq;
 			seq.tripList.push(trip);
-			seq.stampList.push(stamp+trip.startTime*1000);
+			seq.stampList.push(stamp);
 		}
 	}
 };

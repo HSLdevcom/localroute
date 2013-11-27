@@ -186,11 +186,9 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 					if(stop) stopList[stopCount++]=stop;
 				}
 
-				seq=new reach.trans.Seq();
+				seq=seqSet.createSeq();
 				seq.stopList=stopList;
-
 				seqTbl[stopData]=seq;
-				seqSet.insert(seq);
 			}
 
 			key=seq.id+'\t'+mode+'\t'+key;

@@ -38,11 +38,14 @@ reach.trans.SeqSet=function() {
 	this.validAccept;
 };
 
-/** @param {reach.trans.Seq} seq
-  * @return {reach.trans.Seq} */
-reach.trans.SeqSet.prototype.insert=function(seq) {
-	seq.id=this.count;
-	this.list[this.count++]=seq;
+/** @return {reach.trans.Seq} */
+reach.trans.SeqSet.prototype.createSeq=function(id) {
+	var seq;
+
+	if(!id && id!==0) id=this.count++;
+	seq=new reach.trans.Seq();
+	seq.id=id;
+	this.list[id]=seq;
 
 	return(seq);
 };
@@ -88,13 +91,13 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 	txt=stream.readLine();
 
 	seqCount=+txt;
-	seqList=[];
-	seqList.length=seqCount;
+	this.list=[];
+	this.list.length=seqCount;
 	this.count=seqCount;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
 		fieldList=stream.readLine().split('\t');
-		seq=new reach.trans.Seq();
+		seq=this.createSeq(+fieldList[0]);
 
 		stopCount=fieldList.length-1;
 		stopList=[];
@@ -104,12 +107,8 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 			stopList[stopNum]=stopSet.list[+fieldList[stopNum+1]];
 		}
 
-		seq.id=+fieldList[0];
 		seq.stopList=stopList;
-		seqList[seqNum]=seq;
 	}
-
-	this.list=seqList;
 };
 
 reach.trans.SeqSet.prototype.clearTrips=function() {
@@ -121,6 +120,7 @@ reach.trans.SeqSet.prototype.clearTrips=function() {
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
 		seqList[seqNum].tripList=[];
+		seqList[seqNum].stampList=[];
 	}
 };
 
@@ -161,12 +161,12 @@ reach.trans.SeqSet.prototype.sortTrips=function() {
 			stampList[tripNum]=tripRefList[tripNum].stamp;
 			tripList[tripNum]=tripRefList[tripNum].trip;
 		}
-/*
+
 		for(tripNum=0;tripNum<tripCount;tripNum++) {
 			trip=tripList[tripNum];
-			if(trip.key.shortCode=='65N') console.log(new Date(stampList[tripNum])+' '+trip.key.shortCode+' '+trip.key.sign);
+			if(trip.key.shortCode=='65A' || trip.key.shortCode=='65N') console.log(new Date(stampList[tripNum])+' '+trip.key.shortCode+' '+trip.key.sign);
 		}
-*/
+
 	}
 };
 
@@ -261,7 +261,7 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 
 			// Iterate to load info for each stop sequence.
 			case 1:
-				seq=new reach.trans.Seq();
+				seq=self.createSeq();
 
 				stream.readShort(dec,2);
 				stopCount=dec[0];
@@ -309,8 +309,6 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 						prevStop.followerList[followerCount]=stop;
 					}
 				}
-
-				self.insert(seq);
 
 				seqCount--;
 				return(seqCount);
