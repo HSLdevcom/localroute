@@ -17,7 +17,6 @@
 /* global window */
 
 goog.provide('gis.Obj');
-require('longjohn');
 
 /** @param {Function} subClass
   * @param {Function} parentClass */
@@ -27,7 +26,6 @@ gis.inherit=function(subClass,parentClass) {
 	Obj=/** @constructor */ function() {};
 	Obj.prototype=parentClass.prototype;
 	subClass.prototype=new Obj();
-//	subClass.parentClass=parentClass;
 };
 
 gis.env={};
