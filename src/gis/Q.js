@@ -171,3 +171,11 @@ gis.Q.trim=function(txt) {
 	while(re.test(txt.charAt(--pos))) {}
 	return(txt.substr(0,pos+1));
 };
+
+/** @param {number} stamp
+  * @return {string}  */
+gis.Q.formatTime=function(stamp) {
+	var d=new Date(stamp);
+
+	return(gis.Q.zeroPad(d.getHours(),2)+':'+gis.Q.zeroPad(d.getMinutes(),2)+':'+gis.Q.zeroPad(d.getSeconds(),2));
+};

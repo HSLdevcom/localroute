@@ -240,6 +240,17 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 	return(advance);
 };
 
+/** @param {function(reach.trans.Stop):boolean} handler */
+reach.trans.StopSet.prototype.forStops=function(handler) {
+	var stopNum,stopCount;
+	var stop;
+
+	stopCount=this.list.length;
+	for(stopNum=0;stopNum<stopCount;stopNum++) {
+		handler(this.list[stopNum]);
+	}
+};
+
 /** @param {Array.<reach.trans.Stop>} stopList
   * @param {function(reach.trans.Stop):boolean} handler
   * @return {Array.<reach.trans.Stop>} */

@@ -620,7 +620,7 @@ gis.osm.WaySet.prototype.exportPack=function(stream,nameSet) {
 	detail=this.detail;
 	if(!detail) detail=gis.osm.WaySet.detail;
 	tileSize=gis.osm.WaySet.tileSize-detail;
-	roundOff=(1<<detail)>>1;
+	roundOff=((1<<detail)-1)>>1;
 	tileOff=(1<<tileSize)>>1;
 
 	exportTbl={};
@@ -653,6 +653,7 @@ gis.osm.WaySet.prototype.exportPack=function(stream,nameSet) {
 	namedList=/** @type {Array.<gis.osm.Way>} */ ([]);
 	anonList=/** @type {Array.<gis.osm.Way>} */ ([]);
 
+	// Separate named and unnamed ways.
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		way=wayList[wayNum];
 
@@ -715,7 +716,7 @@ gis.osm.WaySet.prototype.importPack=function(stream,nodeSet,profileSet,nameSet,g
 	state={
 		detail:detail,
 		tileSize:tileSize,
-		roundOff:(1<<detail)>>1,
+		roundOff:((1<<detail)-1)>>1,
 		tileOff:(1<<tileSize)>>1,
 
 		nameId:0,

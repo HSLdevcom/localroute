@@ -18,6 +18,7 @@
 */
 
 goog.provide('reach.route.Dijkstra');
+goog.require('gis.Obj');
 goog.require('reach.route.Conf');
 goog.require('reach.route.Visitor');
 goog.require('reach.loc.Location');
@@ -44,6 +45,8 @@ reach.route.Dijkstra=function() {
 	/** @type {Array.<number>} */
 	this.costList;
 	/** @type {Array.<number>} */
+	this.timeList;
+	/** @type {Array.<number>} */
 	this.srcList;
 };
 
@@ -55,7 +58,7 @@ reach.route.Dijkstra.Dir={
 
 /** @param {Array.<reach.loc.Location>} locList
   * @param {reach.route.Conf} conf */
-reach.route.Dijkstra.prototype.start=function(locList,conf) {
+reach.route.Dijkstra.prototype.start=function(locList,conf,time) {
 	var locNum,locCount;
 	var loc;
 	var visitorList;
@@ -70,6 +73,7 @@ reach.route.Dijkstra.prototype.start=function(locList,conf) {
 	this.queue=new gis.data.RadixHeap(this.maxCost);
 
 	this.costList=[];
+	this.timeList=[];
 	this.srcList=[];
 
 	// Get all visitor objects for all start locations and insert them into the priority queue.
@@ -77,7 +81,7 @@ reach.route.Dijkstra.prototype.start=function(locList,conf) {
 	for(locNum=0;locNum<locCount;locNum++) {
 		loc=locList[locNum];
 
-		visitorList=loc.getVisitors(this,conf,1,0);
+		visitorList=loc.getVisitors(this,conf,1,time);
 		visitorCount=visitorList.length;
 
 		for(visitorNum=0;visitorNum<visitorCount;visitorNum++) {

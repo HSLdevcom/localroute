@@ -32,6 +32,7 @@ goog.require('reach.trans.TransSet');
 goog.require('reach.trans.GTFS');
 goog.require('gis.osm.MapSet');
 goog.require('gis.osm.PBF');
+goog.require('reach.route.GeomSet');
 goog.require('reach.route.Batch');
 goog.require('reach.route.GeoCoder');
 
@@ -248,6 +249,10 @@ function init() {
 
 	if(opt.def.bindTrans) {
 		taskList.push(function() {
+			var geomSet;
+
+			geomSet=new reach.route.GeomSet();
+			geomSet.prepareTree(transSet.shapeSet.list);
 /*
 			var seqList;
 			var seqNum,seqCount;
@@ -274,19 +279,68 @@ function init() {
 
 	if(opt.def.from) {
 		taskList.push(function() {
+			var conf;
 			var geoCoder;
 			var batch;
+			var stopNum;
 			var wayNum;
 			var dataPtr;
 
+			conf=new reach.route.Conf();
 			wayNum=0;
 			dataPtr=0;
 
-			transSet.prepare(depart-4*60*60000,depart+8*60*60000);
+			// Load transit departures around desired departure time.
+			if(transSet) {
+				transSet.prepare(depart-4*60*60000,depart+8*60*60000);
+			}
 
 			mapSet.waySet.prepareTree();
+
+			geoCoder=new reach.route.GeoCoder(mapSet,transSet);
+			batch=new reach.route.Batch(mapSet,geoCoder);
+			batch.prepareAccess(conf);
+
 			mapSet.waySet.forWays(function(way) {
 				way.calcDist();
+			});
+
+			if(transSet) {
+				mapSet.waySet.clearMarks();
+				stopNum=0;
+
+				transSet.stopSet.forStops(function(stop) {
+					var loc;
+					var refList;
+					var refNum,refCount;
+					var ref;
+					var way;
+
+					loc=new reach.loc.Outdoor(stop.ll,mapSet);
+					refList=loc.getNodes(conf,++stopNum);
+					refCount=refList.length;
+
+					if(!refCount) {
+//						console.log('Failed to bind stop '+stop.name);
+						return;
+					}
+
+					for(refNum=0;refNum<refCount;refNum++) {
+						ref=refList[refNum];
+						way=ref.way;
+						node=ref.node;
+						if(!node.stopRefList) node.stopRefList=[];
+						node.stopRefList.push({stop:stop,dist:ref.dist});
+
+						if(!stop.nodeRefList) stop.nodeRefList=[];
+						stop.nodeRefList.push(ref);
+					}
+				});
+			}
+
+			conf.firstWayPtr=dataPtr;
+
+			mapSet.waySet.forWays(function(way) {
 				way.getNodes();
 
 				way.iterId=wayNum++;
@@ -295,10 +349,34 @@ function init() {
 				dataPtr+=way.nodeList.length;
 			});
 
-			geoCoder=new reach.route.GeoCoder(mapSet,transSet);
-			batch=new reach.route.Batch(mapSet,geoCoder);
+			conf.lastWayPtr=dataPtr-1;
+
+			if(transSet) {
+				conf.firstStopPtr=dataPtr;
+
+				transSet.stopSet.forStops(
+					/** @param {reach.trans.Stop} stop */
+					function(stop) {
+						stop.dataPtr=dataPtr++;
+					}
+				);
+
+				conf.lastStopPtr=dataPtr-1;
+				conf.firstSeqPtr=dataPtr;
+
+				transSet.seqSet.forSeqs(
+					/** @param {reach.trans.Seq} seq */
+					function(seq) {
+						seq.dataPtr=dataPtr;
+						dataPtr+=seq.stopList.length;
+					}
+				);
+
+				conf.lastSeqPtr=dataPtr-1;
+			}
+
 //globalFoo=0;
-			batch.run(opt.def.from);
+			batch.run(opt.def.from,conf,depart);
 //console.log(globalFoo+' '+mapSet.nodeSet.list.length+' '+dataPtr);
 
 			nextTask();
@@ -328,6 +406,36 @@ function init() {
 			nextTask();
 		});
 	}
+
+/*
+		taskList.push(function() {
+			var seqList;
+			var seqNum,seqCount;
+			var seq;
+			var stopList;
+			var stopNum,stopCount;
+			var stop;
+			var deg;
+
+			transSet.prepare(new Date().getTime()-86400*1000*50,new Date().getTime()-86400*1000*30);
+			seqList=transSet.seqSet.list;
+			seqCount=seqList.length;
+			for(seqNum=0;seqNum<seqCount;seqNum++) {
+				seq=seqList[seqNum];
+				stopList=seq.stopList;
+				stopCount=stopList.length;
+				if(!seq.tripList.length) continue;
+				console.log(seq.tripList[0].key.shortCode+'\t'+seq.tripList[0].key.name);
+
+				for(stopNum=0;stopNum<stopCount;stopNum++) {
+					stop=stopList[stopNum];
+					deg=stop.ll.toDeg();
+					console.log(deg.llat+'\t'+deg.llon+'\t'+stop.name);
+				}
+			}
+			nextTask();
+		});
+*/
 
 	nextTask();
 

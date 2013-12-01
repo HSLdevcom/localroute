@@ -35,67 +35,37 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-goog.provide('gis.osm.Node');
+goog.provide('gis.osm.meta.Stop');
 goog.require('gis.Obj');
-goog.require('gis.MU');
 goog.require('gis.osm.Meta');
 
 /** @constructor
-  * @param {gis.MU} ll */
-gis.osm.Node=function(ll) {
-	/** @type {gis.MU} */
-	this.ll=ll;
-	/** @type {Array.<gis.osm.Way>} List of ways passing through this node. */
-	this.wayList=[];
-	/** @type {Array.<number>} Node position along each way passing through it. */
-	this.posList=[];
-	/** @type {number} ID used as temporary value in various searches. */
-	this.iterId;
+  * @extends {gis.osm.Meta} */
+gis.osm.meta.Stop=function() {
+	gis.osm.Meta.call(this);
 
-	/** @type {Object.<string,string>} */
-	this.tagTbl;
-	/** @type {boolean} */
-	this.important;
-	/** @type {gis.osm.Meta} */
-	this.meta;
+	this.type=gis.osm.Meta.Type.STOP;
 
-	/** @type {gis.osm.Node} */
-	this.replacement;
-
-	/** @type {Array.<gis.osm.Way>} List of nearby ways with names. TODO: this would be unnecessary with a better data model for merged lanes. */
-	this.nameRefList=[];
+	/** @type {string} */
+	this.name;
+	/** @type {string} */
+	this.ref;
 };
 
-/** @param {gis.osm.Way} way
-  * @param {number} pos */
-gis.osm.Node.prototype.addWay=function(way,pos) {
-	this.wayList.push(way);
-	this.posList.push(pos);
+gis.inherit(gis.osm.meta.Stop,gis.osm.Meta);
+
+/** @param {gis.enc.NameSet} nameSet */
+gis.osm.meta.Stop.prototype.getNames=function(nameSet) {
+	nameSet.insert(this.name);
+	nameSet.insert(this.ref);
 };
 
-/** @param {gis.osm.Way} way
-  * @param {number} pos */
-gis.osm.Node.prototype.removeWay=function(way,pos) {
-	var wayList;
-	var wayNum,wayCount;
-	var posList;
+/** @param {gis.io.PackStream} stream
+  * @param {gis.enc.NameSet} nameSet */
+gis.osm.meta.Stop.prototype.exportPack=function(stream,nameSet) {
+	var outList;
 
-	wayList=this.wayList;
-	wayCount=wayList.length;
-	if(wayCount<2) {
-		if(wayCount==1 && wayList[0]!=way) console.log('ERROR removeWay');
-		this.wayList=[];
-		this.posList=[];
-		return;
-	}
+	outList=[nameSet.getId(this.name),nameSet.getId(this.ref)];
 
-	posList=this.posList;
-
-	for(wayNum=wayCount;wayNum--;) {
-		if(wayList[wayNum]==way && posList[wayNum]==pos) {
-			wayList.splice(wayNum,1);
-			posList.splice(wayNum,1);
-			return;
-		}
-	}
+	stream.writeLong(outList);
 };

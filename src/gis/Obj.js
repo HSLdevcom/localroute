@@ -17,6 +17,7 @@
 /* global window */
 
 goog.provide('gis.Obj');
+require('longjohn');
 
 /** @param {Function} subClass
   * @param {Function} parentClass */

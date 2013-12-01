@@ -36,17 +36,12 @@ reach.route.Batch=function(mapSet,geoCoder) {
 	this.dijkstra=new reach.route.Dijkstra();
 };
 
-/** @param {string} addrFrom */
-reach.route.Batch.prototype.run=function(addrFrom) {
-	var conf;
+reach.route.Batch.prototype.prepareAccess=function(conf) {
 	var profileAccessList;
 	var profileList;
 	var	profileNum,profileCount;
 	var profile;
 	var flag;
-	var locFrom;
-
-	conf=new reach.route.Conf();
 
 	profileAccessList=[];
 	profileList=this.mapSet.profileSet.wayProfileList;
@@ -65,9 +60,14 @@ reach.route.Batch.prototype.run=function(addrFrom) {
 	}
 
 	conf.profileAccessList=profileAccessList;
+};
+
+/** @param {string} addrFrom */
+reach.route.Batch.prototype.run=function(addrFrom,conf,time) {
+	var locFrom;
 
 	locFrom=this.geoCoder.find(addrFrom);
-	this.dijkstra.start([locFrom],conf);
+	this.dijkstra.start([locFrom],conf,time);
 
 	while(!this.dijkstra.step()) {}
 };

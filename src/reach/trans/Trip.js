@@ -27,12 +27,12 @@ reach.trans.Trip=function(key) {
 	/** @type {number} */
 	this.valid;
 	/** @type {Array.<number>|Uint32Array} Unit: seconds. */
-	this.deltaList;
+//	this.deltaList;
 	/** @type {Array.<number>} Unit: seconds. */
 	this.timeList;
 
 	/** @type {number} Unit: seconds. */
-	this.startTime;
+//	this.startTime;
 	/** @type {number} Unit: seconds. */
 //	this.duration;
 	/** @type {number} */

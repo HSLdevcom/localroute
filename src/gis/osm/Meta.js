@@ -40,15 +40,26 @@ goog.require('gis.Obj');
 
 /** @constructor */
 gis.osm.Meta=function() {
-	/** @type {Array.<gis.osm.Node>} */
-	this.nodeList=[];
-
 	/** @type {gis.osm.Meta.Type} */
 	this.type;
+
+	/** @type {number} */
+	this.count=0;
+
+	/** @type {Array.<gis.osm.Node>} Nodes using this metadata, used during compression. */
+	this.nodeList;
 };
 
 /** @enum {number} */
 gis.osm.Meta.Type={
 	NONE:0,
-	STOP:1
+	WAY:1,
+	STOP:2
 };
+
+/** @param {gis.enc.NameSet} nameSet */
+gis.osm.Meta.prototype.getNames=function(nameSet) {};
+
+/** @param {gis.io.PackStream} stream
+  * @param {gis.enc.NameSet} nameSet */
+gis.osm.Meta.prototype.exportPack=function(stream,nameSet) {};

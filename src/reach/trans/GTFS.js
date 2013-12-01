@@ -467,7 +467,7 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var tripSet;
 	var tripTbl;
 	var trip;
-	var arrive,depart;
+	var arrive,depart,time;
 
 	seqSet=this.transSet.seqSet;
 	keySet=this.transSet.keySet;
@@ -542,10 +542,16 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	key+='\t'+timeList.join('\t');
 	trip=tripTbl[key];
 	if(!trip) {
+		time=0;
+		for(stopNum=1;stopNum<stopCount;stopNum++) {
+			time+=timeList[stopNum];
+			timeList[stopNum]=time;
+		}
+
 		trip=new reach.trans.Trip(keyObj);
 		trip.valid=tripDesc.valid;
 		trip.timeList=timeList;
-		trip.startTime=timeList[0];
+//		trip.startTime=timeList[0];
 
 		tripTbl[key]=trip;
 		tripSet.insert(trip);

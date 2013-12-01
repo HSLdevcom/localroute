@@ -205,7 +205,13 @@ reach.trans.TransSet.prototype.prepare=function(first,last) {
 	// Get days from 1970-01-01 to last day to load.
 	jdLast=~~((last/60000-offset)/1440);
 
-	this.seqSet.clearTrips();
+	this.seqSet.forSeqs(
+		/** @param {reach.trans.Seq} seq */
+		function(seq) {
+			seq.tripList=[];
+			seq.stampList=[];
+		}
+	);
 
 	for(jd=jdFirst;jd<=jdLast;jd++) {
 		// Recalculate exact timestamp at noon by checking UTC offset near midday.

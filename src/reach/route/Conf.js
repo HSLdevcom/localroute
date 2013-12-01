@@ -18,6 +18,7 @@
 */
 
 goog.provide('reach.route.Conf');
+goog.require('gis.Obj');
 
 /** @constructor */
 reach.route.Conf=function() {
@@ -41,17 +42,39 @@ reach.route.Conf=function() {
 	this.costMulWalk=1.2;
 	/** @type {number} Unit: multiplication factor. */
 	this.costMulWait=1;
+	/** @type {number} Unit: multiplication factor. */
+	this.costMulTrans=1;
 
 	/** @type {number} Unit: millisecond/m */
 	this.walkTimePerM=0;
 	/** @type {number} Unit: TU/m */
 	this.walkCostPerM=0;
+	/** @type {number} Unit: TU/millisecond */
+	this.waitCostPerMS=0;
+	/** @type {number} Unit: TU/millisecond */
+	this.transCostPerMS=0;
 
 	/** @type {Array.<number>} */
 	this.profileAccessList;
+
+	/** @type {number} First precalc table index referring to a place along a way. */
+	this.firstWayPtr;
+	/** @type {number} Last precalc table index referring to a place along a way. */
+	this.lastWayPtr;
+	/** @type {number} */
+	this.firstStopPtr;
+	/** @type {number} */
+	this.lastStopPtr;
+	/** @type {number} */
+	this.firstSeqPtr;
+	/** @type {number} */
+	this.lastSeqPtr;
 };
 
 reach.route.Conf.prototype.init=function() {
 	this.walkTimePerM=1000/this.mpsWalk;
 	this.walkCostPerM=this.timeDiv/this.mpsWalk*this.costMulWalk;
+
+	this.waitCostPerMS=this.timeDiv/1000*this.costMulWait;
+	this.transCostPerMS=this.timeDiv/1000*this.costMulTrans;
 };

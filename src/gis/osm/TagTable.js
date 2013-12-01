@@ -57,6 +57,7 @@ gis.osm.TagTable.boolTbl={
 
 	// oneway
 	'reverse':gis.osm.TagTable.REVERSE,
+	'opposite_lane':gis.osm.TagTable.REVERSE,
 
 	// access
 	'designated':1,

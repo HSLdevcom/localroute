@@ -43,13 +43,8 @@ reach.trans.Stop=function(origId,name,ll) {
 	/** @type {Object.<reach.trans.Trip.Mode,boolean>} */
 //	this.transModeTbl;
 
-	// Routing data to store how stop was reached etc.
 	/** @type {number} */
-//	this.runId;
-	/** @type {number} */
-//	this.cost;
-	/** @type {number} */
-//	this.time;
+	this.dataPtr;
 
 	// Time table statistics used when compressing and decompressing.
 	/** @type {Object.<number,number>} */

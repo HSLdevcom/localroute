@@ -219,11 +219,11 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet,nodeSet,meta
 		if(!key) {
 			// Key ID 0 means continue to next node. Check if the previous node has useful tags to parse.
 			if(useful) {
-				meta=metaSet.parseNode(tagTbl);
+				meta=metaSet.parse(tagTbl,'n');
 				if(meta) {
 					node=nodeSet.promote(nodeIdList[nodeNum],waySet,true);
-					node.meta=meta;
-					meta.nodeList.push(node);
+//					node.meta=meta;
+//					metaSet.insertNode(node);
 				}
 			}
 			tagFirst=tagNum;
@@ -499,13 +499,14 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 	var primParser;
 
 	/** @param {Buffer} data */
-	function parseBlock(data) {
+	function parseBlock(err,data) {
 		var prim;
 		var txtList;
 		var groupList;
 		var groupNum,groupCount;
 		var group;
 
+		if(!data) return;
 		prim=primParser.parse(data);
 		txtList=[];
 		groupList=prim.primitivegroup;
@@ -519,6 +520,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 			if(group['relations']) self.parseRels(/** @type {PrimitiveList} */ (group['relations']),txtList,prim,waySet,nodeSet,metaSet);
 		}
 
+		// TODO: this makes the call stack grow too much.
 		readBlock();
 	}
 
@@ -547,14 +549,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 				zBuf=blob.zlibData;
 
 				if(zBuf) {
-					zlib.inflate(zBuf,
-						/** @param {Buffer} data */
-						function(err,data) {
-							if(!data) return;
-							parseBlock(data);
-						}
-					);
-
+					zlib.inflate(zBuf,parseBlock);
 					return;
 				}
 			}

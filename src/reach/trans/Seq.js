@@ -59,3 +59,46 @@ reach.trans.Seq=function() {
 	/** @type {number} Number of departures around search start time, to evaluate line niceness. */
 //	this.departureCount=0;
 };
+
+/** @param {number} time Unix timestamp.
+  * @return {number} */
+reach.trans.Seq.prototype.findNextTime=function(time,pos,delta) {
+	var first,last,mid;
+	var stamp;
+
+	mid=0;
+	first=0;
+	last=this.stampList.length-1;
+	// Binary search to find when the next bus of this line arrives.
+	while(first<=last) {
+		mid=(first+last)>>1;
+		stamp=this.stampList[mid]+this.tripList[mid].timeList[pos]*1000;
+		if(stamp<time) first=mid+1;
+		else if(stamp>time) last=mid-1;
+		else break;
+	}
+
+	last=this.stampList.length-1;
+
+	if((stamp-time)*delta<0) {
+		// Can't use the trip because it departs too early or arrives too late, so check next/previous.
+		do {
+			mid+=delta;
+			if(mid<0 || mid>=last) return(mid-delta);
+
+			stamp=this.stampList[mid]+this.tripList[mid].timeList[pos]*1000;
+		} while((stamp-time)*delta<0);
+
+		return(mid);
+	}
+
+	// Check if it's possible to find a usable earlier departure or later arrival.
+	do {
+		mid-=delta;
+		if(mid<0 || mid>=last) break;
+
+		stamp=this.stampList[mid]+this.tripList[mid].timeList[pos]*1000;
+	} while((stamp-time)*delta>=0);
+
+	return(mid+delta);
+};

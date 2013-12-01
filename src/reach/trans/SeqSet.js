@@ -111,7 +111,8 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 	}
 };
 
-reach.trans.SeqSet.prototype.clearTrips=function() {
+/** @param {function(reach.trans.Seq)} handler */
+reach.trans.SeqSet.prototype.forSeqs=function(handler) {
 	var seqList;
 	var seqNum,seqCount;
 
@@ -119,8 +120,7 @@ reach.trans.SeqSet.prototype.clearTrips=function() {
 	seqCount=this.count;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
-		seqList[seqNum].tripList=[];
-		seqList[seqNum].stampList=[];
+		handler(seqList[seqNum]);
 	}
 };
 
