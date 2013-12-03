@@ -13,6 +13,10 @@
 	<http://creativecommons.org/publicdomain/zero/1.0/>.
 */
 
+/** @fileoverview Create global objects.
+  * This file is only needed when code is NOT compiled.
+  * Otherwise Closure Compiler handles this. */
+
 var gis={};
 var reach={};
 this.gis=gis;
