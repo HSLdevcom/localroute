@@ -112,17 +112,17 @@ reach.Api.prototype.find=function(src,dst,callback) {
 
 	time=new Date().getTime();
 
-	ll=new gis.Deg(src.lat,src.lng).toMU();
+	ll=new gis.Deg(src['lat'],src['lng']).toMU();
 	if(!this.srcReady || ll.llat!=this.srcReady.llat || ll.llon!=this.srcReady.llon || !this.srcTime || time>this.srcTime+30*1000) {
 		loc=new reach.loc.Outdoor(ll,this.mapSet);
 
-//		this.result=this.batch.preCalc(loc,this.conf,1382245200000-2*24*60*60*1000);
-		this.result=this.batch.preCalc(loc,this.conf,time);
+		this.result=this.batch.preCalc(loc,this.conf,1382245200000-2*24*60*60*1000);
+//		this.result=this.batch.preCalc(loc,this.conf,time);
 		this.srcReady=ll;
 		this.srcTime=time;
 	}
 
-	ll=new gis.Deg(dst.lat,dst.lng).toMU();
+	ll=new gis.Deg(dst['lat'],dst['lng']).toMU();
 	loc=new reach.loc.Outdoor(ll,this.mapSet);
 
 	route=this.batch.getRoute(loc,this.conf,this.result);

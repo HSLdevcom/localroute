@@ -167,7 +167,7 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet,nodeSet,meta
 	grid=this.maskGrid;
 	gridMul=gis.osm.PBF.gridMul;
 
-	mul=prim.granularity/100/10000000;
+	mul=prim['granularity']/100/10000000;
 	testMul=gridMul*mul;
 	testAdd=90*gridMul+0.5;
 	nodeCount=dense['id'].length;
@@ -201,7 +201,7 @@ gis.osm.PBF.prototype.parseDense=function(dense,txtList,prim,waySet,nodeSet,meta
 //	if(!matchCount || !tagList || !tagList.length) return;
 	if(!nodeIdList.length || !tagList || !tagList.length) return;
 
-	if(!txtList.length) this.decodeTxtList(txtList,prim.stringtable.s);
+	if(!txtList.length) this.decodeTxtList(txtList,prim['stringtable']['s']);
 
 	// Create table with IDs of interesting key names that indicate useful nodes.
 	keepKeyTbl=this.makeKeyTbl(txtList,'addr:housenumber amenity barrier highway leisure public_transport railway shop sport tourism traffic_sign'.split(' '));
@@ -269,7 +269,7 @@ gis.osm.PBF.prototype.parseWays=function(descList,txtList,prim,waySet,nodeSet) {
 	wayTbl=waySet.tbl;
 	nodeTbl=nodeSet.tbl;
 
-	if(!txtList.length) this.decodeTxtList(txtList,prim.stringtable.s);
+	if(!txtList.length) this.decodeTxtList(txtList,prim['stringtable']['s']);
 	// For profile key compression in memory.
 	stream=new gis.io.PackStream(null,null);
 
@@ -378,7 +378,7 @@ gis.osm.PBF.prototype.parseRels=function(descList,txtList,prim,waySet,nodeSet,me
 	wayTbl=waySet.tbl;
 	metaTbl=metaSet.tbl;
 
-	if(!txtList.length) this.decodeTxtList(txtList,prim.stringtable.s);
+	if(!txtList.length) this.decodeTxtList(txtList,prim['stringtable']['s']);
 
 	// Create table with IDs of interesting type names that indicate useful relations.
 	keepTypeTbl=this.makeKeyTbl(txtList,'route route_master access enforcement restriction associatedstreet bridge tunnel site public_transport'.split(' '));
@@ -509,7 +509,7 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 		if(!data) return;
 		prim=primParser.parse(data);
 		txtList=[];
-		groupList=prim.primitivegroup;
+		groupList=prim['primitivegroup'];
 		groupCount=groupList.length;
 
 		for(groupNum=0;groupNum<groupCount;groupNum++) {
@@ -540,13 +540,13 @@ gis.osm.PBF.prototype.importPBF=function(path,done) {
 			hdr=hdrParser.parse(hdrBuf.slice(0,hdrLen));
 
 			// Blob length.
-			blobLen=hdr.datasize;
+			blobLen=hdr['datasize'];
 			// Blob.
 			fs.readSync(fd,blobBuf,0,blobLen,null);
 
-			if(hdr.type=='OSMData') {
+			if(hdr['type']=='OSMData') {
 				blob=blobParser.parse(blobBuf.slice(0,blobLen));
-				zBuf=blob.zlibData;
+				zBuf=blob['zlibData'];
 
 				if(zBuf) {
 					zlib.inflate(zBuf,parseBlock);

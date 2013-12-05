@@ -284,7 +284,7 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 //console.log((way.dataPtr+pos)+' w->s '+src);
 				leg['startTime']=timeList[way.dataPtr+pos];
 				leg['duration']=leg['endTime']-leg['startTime'];
-				leg['legGeometry']={points:ptList.reverse()};
+				leg['legGeometry']={'points':ptList.reverse()};
 
 				stopRefList=way.nodeList[pos].stopRefList;
 				refCount=stopRefList.length;
@@ -301,7 +301,7 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 			} else {
 				leg['startTime']=timeList[way.dataPtr+pos];
 				leg['duration']=leg['endTime']-leg['startTime'];
-				leg['legGeometry']={points:ptList.reverse()};
+				leg['legGeometry']={'points':ptList.reverse()};
 
 				break;
 			}
@@ -369,7 +369,7 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 
 				leg['startTime']=seq.stampList[srcList[seq.dataPtr+pos]]+trip.timeList[pos]*1000;
 				leg['duration']=leg['endTime']-leg['startTime'];
-				leg['legGeometry']={points:ptList.reverse()};
+				leg['legGeometry']={'points':ptList.reverse()};
 
 				leg=null;
 			} else if(src>=conf.ptrWayFirst && src<=conf.ptrWayLast) {
