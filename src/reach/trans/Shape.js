@@ -66,7 +66,7 @@ reach.trans.Shape.prototype.sortPoints=function() {
 	var ptList;
 	var ptNum,ptCount;
 
-	posPtList=/** @type {{pos:number,pt:number}} */ ([]);
+	posPtList=/** @type {Array.<{pos:number,pt:number}>} */ ([]);
 
 	posList=this.posList;
 	ptList=this.ptList;
@@ -87,7 +87,7 @@ reach.trans.Shape.prototype.sortPoints=function() {
 	this.sorted=true;
 };
 
-/** @param {gis.osm.PackStream} stream
+/** @param {gis.io.PackStream} stream
   * @param {number} detail
   * @param {number} roundOff */
 reach.trans.Shape.prototype.exportPack=function(stream,detail,roundOff) {
@@ -129,7 +129,7 @@ reach.trans.Shape.prototype.exportPack=function(stream,detail,roundOff) {
 	stream.writeLong(outList);
 };
 
-/** @param {gis.osm.PackStream} stream
+/** @param {gis.io.PackStream} stream
   * @param {number} detail
   * @param {number} roundOff
   * @param {reach.trans.SeqSet} seqSet */

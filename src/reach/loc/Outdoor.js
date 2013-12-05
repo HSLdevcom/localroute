@@ -41,14 +41,13 @@ reach.loc.Outdoor=function(ll,mapSet) {
 
 	/** @type {number} How many nearby stops have been found. */
 	this.stopCount=0;
-	/** @type {reach.route.result.WalkLeg} */
-	this.srcLeg=null;
 };
 
 gis.inherit(reach.loc.Outdoor,reach.loc.Location);
 
-reach.loc.Outdoor.prototype.getNodes=function(conf,iterId) {
+reach.loc.Outdoor.prototype.getNodes=function(conf) {
 	var attempt;
+	var iterId;
 	var nearest;
 	var way;
 	var posPrev,posNext;
@@ -64,6 +63,7 @@ reach.loc.Outdoor.prototype.getNodes=function(conf,iterId) {
 	var refList;
 
 for(attempt=0;attempt<3;attempt++) {
+	iterId=this.mapSet.iterId++;
 	// TODO: Clearly this function takes too many parameters, root and 0,0,0 are useless here.
 	nearest=this.mapSet.waySet.tree.findWay(this.ll.llat,this.ll.llon,null,conf.snapDist,this.mapSet.waySet.tree.root,0,0,0,function(way) {
 		var accessPenalty;

@@ -44,6 +44,9 @@ reach.trans.Seq=function() {
    /** @type {Array.<reach.trans.Shape>} */
     this.shapeList=[];
 
+	/** @type {number} */
+	this.dataPtr;
+
 	/** @type {Object.<number,number>} Used to filter out line if none of its trips use an allowed mode of transportation. */
 //	this.transModeTbl={};
 
@@ -61,6 +64,8 @@ reach.trans.Seq=function() {
 };
 
 /** @param {number} time Unix timestamp.
+  * @param {number} pos Index of stop along sequence.
+  * @param {number} delta Find departure just after (delta=1) or just before (-1) time.
   * @return {number} */
 reach.trans.Seq.prototype.findNextTime=function(time,pos,delta) {
 	var first,last,mid;

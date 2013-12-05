@@ -38,7 +38,8 @@ reach.trans.SeqSet=function() {
 	this.validAccept;
 };
 
-/** @return {reach.trans.Seq} */
+/** @param {number=} id
+  * @return {reach.trans.Seq} */
 reach.trans.SeqSet.prototype.createSeq=function(id) {
 	var seq;
 
@@ -161,12 +162,6 @@ reach.trans.SeqSet.prototype.sortTrips=function() {
 			stampList[tripNum]=tripRefList[tripNum].stamp;
 			tripList[tripNum]=tripRefList[tripNum].trip;
 		}
-
-		for(tripNum=0;tripNum<tripCount;tripNum++) {
-			trip=tripList[tripNum];
-			if(trip.key.shortCode=='65A' || trip.key.shortCode=='65N') console.log(new Date(stampList[tripNum])+' '+trip.key.shortCode+' '+trip.key.sign);
-		}
-
 	}
 };
 

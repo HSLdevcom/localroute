@@ -69,6 +69,7 @@ reach.route.TripVisitor.create=function(dijkstra,seq,tripNum,pos,cost,time,src) 
 	self.time=time;
 	self.src=src;
 	self.enter=seq.dataPtr+pos;
+//seq.firstPos=pos;
 
 	return(self);
 };
@@ -79,8 +80,10 @@ reach.route.TripVisitor.prototype.free=function() {
 	return(reach.route.Visitor.State.OK);
 };
 
-/** @param {reach.route.Dijkstra} dijkstra */
-reach.route.TripVisitor.prototype.visit=function(dijkstra) {
+/** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Result} result
+  * @return {reach.route.Visitor.State} */
+reach.route.TripVisitor.prototype.visit=function(dijkstra,result) {
 	var seq;
 	var pos;
 	var cost,costDelta;
@@ -96,19 +99,19 @@ reach.route.TripVisitor.prototype.visit=function(dijkstra) {
 	pos=this.pos;
 	cost=this.cost;
 	time=this.time;
+	tripNum=this.tripNum;
 	dataPtr=seq.dataPtr+pos;
 
-	if(dijkstra.costList[dataPtr] && dijkstra.costList[dataPtr]<=cost) return(this.free());
+	if(result.costList[dataPtr] && result.costList[dataPtr]<=cost) return(this.free());
 
-	dijkstra.costList[dataPtr]=cost;
-//	dijkstra.timeList[dataPtr]=time;
-//	dijkstra.srcList[dataPtr]=src;
+	result.costList[dataPtr]=cost;
+//	result.timeList[dataPtr]=time;
+	result.srcList[dataPtr]=tripNum;
 //	src=dataPtr;
 
 	pos++;
 	if(pos>=seq.stopList.length) return(this.free());
 
-	tripNum=this.tripNum;
 	trip=seq.tripList[tripNum];
 
 	conf=dijkstra.conf;
@@ -121,7 +124,7 @@ reach.route.TripVisitor.prototype.visit=function(dijkstra) {
 
 	stop=seq.stopList[pos];
 	if(this.src!=stop.dataPtr) {
-		dijkstra.found(reach.route.StopVisitor.create(dijkstra,stop,cost,time,this.enter));
+		dijkstra.found(reach.route.StopVisitor.create(dijkstra,stop,cost+1.5*60*conf.timeDiv,time,this.enter));
 	}
 
 	this.pos=pos;

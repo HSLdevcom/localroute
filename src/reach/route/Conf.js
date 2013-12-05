@@ -25,7 +25,7 @@ reach.route.Conf=function() {
 	/** @type {number} Number of TU (Time Units) per one second, defining accuracy. */
 	this.timeDiv=10;
 	/** @type {number} Maximum travel cost. Unit: TU. */
-	this.maxCost=this.timeDiv*60*60* 20;	// 2 hours.
+	this.maxCost=this.timeDiv*60*60* 3;	// 3 hours.
 	/** @type {number} Sentinel value representing infinite cost. Unit: 1/timeDiv seconds. */
 	this.infCost=this.maxCost*2;	// Any number bigger than maxCost.
 
@@ -39,9 +39,9 @@ reach.route.Conf=function() {
 //	this.mpsWalk=5000/3600;	// 5 km/h
 
 	/** @type {number} Unit: multiplication factor. */
-	this.costMulWalk=1.2;
+	this.costMulWalk=1.5;
 	/** @type {number} Unit: multiplication factor. */
-	this.costMulWait=1;
+	this.costMulWait=0.95;
 	/** @type {number} Unit: multiplication factor. */
 	this.costMulTrans=1;
 
@@ -58,17 +58,17 @@ reach.route.Conf=function() {
 	this.profileAccessList;
 
 	/** @type {number} First precalc table index referring to a place along a way. */
-	this.firstWayPtr;
+	this.ptrWayFirst;
 	/** @type {number} Last precalc table index referring to a place along a way. */
-	this.lastWayPtr;
+	this.ptrWayLast;
 	/** @type {number} */
-	this.firstStopPtr;
+	this.ptrStopFirst;
 	/** @type {number} */
-	this.lastStopPtr;
+	this.ptrStopLast;
 	/** @type {number} */
-	this.firstSeqPtr;
+	this.ptrSeqFirst;
 	/** @type {number} */
-	this.lastSeqPtr;
+	this.ptrSeqLast;
 };
 
 reach.route.Conf.prototype.init=function() {

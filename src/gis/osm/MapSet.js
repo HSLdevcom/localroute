@@ -1,4 +1,4 @@
-/*
+/** @license
 	OSM Squeezer
 
 	Copyright (c) "2013, by Aalto University, Finland;
@@ -56,6 +56,8 @@ gis.osm.MapSet=function() {
 	this.profileSet=new gis.osm.ProfileSet();
 	/** @type {gis.osm.WaySet} */
 	this.waySet=new gis.osm.WaySet();
+	/** @type {number} */
+	this.iterId=0;
 };
 
 /** @param {boolean} harder */

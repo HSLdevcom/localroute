@@ -1,4 +1,4 @@
-/**
+/** @license
 	This file is part of LocalRoute.js.
 
 	Copyright (C) 2012, 2013 BusFaster Oy
@@ -35,8 +35,9 @@ goog.require('gis.osm.PBF');
 goog.require('reach.route.GeomSet');
 goog.require('reach.route.Batch');
 goog.require('reach.route.GeoCoder');
+goog.require('reach.Api');
 
-function init() {
+function initNode() {
 	var dateParts;
 	var dateStart;
 	var dateSys;
@@ -46,6 +47,9 @@ function init() {
 	var transSet;
 	var mapSet;
 	var gtfs;
+	var conf;
+	var geoCoder;
+	var batch;
 	var opt;
 	var taskList;
 	var context;
@@ -279,9 +283,6 @@ function init() {
 
 	if(opt.def.from) {
 		taskList.push(function() {
-			var conf;
-			var geoCoder;
-			var batch;
 			var stopNum;
 			var wayNum;
 			var dataPtr;
@@ -336,9 +337,11 @@ function init() {
 						stop.nodeRefList.push(ref);
 					}
 				});
+
+				mapSet.iterId=stopNum+1;
 			}
 
-			conf.firstWayPtr=dataPtr;
+			conf.ptrWayFirst=dataPtr;
 
 			mapSet.waySet.forWays(function(way) {
 				way.getNodes();
@@ -349,10 +352,10 @@ function init() {
 				dataPtr+=way.nodeList.length;
 			});
 
-			conf.lastWayPtr=dataPtr-1;
+			conf.ptrWayLast=dataPtr-1;
 
 			if(transSet) {
-				conf.firstStopPtr=dataPtr;
+				conf.ptrStopFirst=dataPtr;
 
 				transSet.stopSet.forStops(
 					/** @param {reach.trans.Stop} stop */
@@ -361,8 +364,8 @@ function init() {
 					}
 				);
 
-				conf.lastStopPtr=dataPtr-1;
-				conf.firstSeqPtr=dataPtr;
+				conf.ptrStopLast=dataPtr-1;
+				conf.ptrSeqFirst=dataPtr;
 
 				transSet.seqSet.forSeqs(
 					/** @param {reach.trans.Seq} seq */
@@ -372,12 +375,18 @@ function init() {
 					}
 				);
 
-				conf.lastSeqPtr=dataPtr-1;
+				conf.ptrSeqLast=dataPtr-1;
 			}
 
-//globalFoo=0;
-			batch.run(opt.def.from,conf,depart);
-//console.log(globalFoo+' '+mapSet.nodeSet.list.length+' '+dataPtr);
+			batch.run(geoCoder.find(opt.def.from),conf,depart);
+
+			nextTask();
+		});
+	}
+
+	if(opt.def.to) {
+		taskList.push(function() {
+			batch.getRoute(geoCoder.find(opt.def.to),conf,batch.dijkstra.result);
 
 			nextTask();
 		});
@@ -450,5 +459,5 @@ function init() {
 }
 
 if(typeof(process)!='undefined' && process.argv && typeof(process.argv[1])=='string' && process.argv[1].match(/(^|[/])lr.js$/)) {
-	init();
+	initNode();
 }

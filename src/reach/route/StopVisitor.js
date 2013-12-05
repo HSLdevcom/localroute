@@ -17,6 +17,11 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/** @fileoverview Visitor for entering vehicles and road network
+  * from public transit stops in Dijkstra-style routing.
+  * Dijkstra's algorithm has been modified to store visitors
+  * instead of graph nodes in its priority queue. */
+
 goog.provide('reach.route.StopVisitor');
 goog.require('gis.Obj');
 goog.require('reach.route.Visitor');
@@ -69,8 +74,10 @@ reach.route.StopVisitor.prototype.free=function() {
 	return(reach.route.Visitor.State.OK);
 };
 
-/** @param {reach.route.Dijkstra} dijkstra */
-reach.route.StopVisitor.prototype.visit=function(dijkstra) {
+/** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Result} result
+  * @return {reach.route.Visitor.State} */
+reach.route.StopVisitor.prototype.visit=function(dijkstra,result) {
 	var stop;
 	var cost,costDelta;
 	var time,timeQuery,timeWait;
@@ -92,15 +99,20 @@ reach.route.StopVisitor.prototype.visit=function(dijkstra) {
 	time=this.time;
 	dataPtr=stop.dataPtr;
 
-	if(dijkstra.costList[dataPtr] && dijkstra.costList[dataPtr]<=cost) return(this.free());
+	if(result.costList[dataPtr] && result.costList[dataPtr]<=cost) return(this.free());
 
-	console.log(cost+'\t'+gis.Q.formatTime(time)+'\t'+stop.name);
+//	console.log(cost+'\t'+gis.Q.formatTime(time)+'\t'+stop.name);
 //console.log(cost);
 
-	dijkstra.costList[dataPtr]=cost;
-	dijkstra.timeList[dataPtr]=time;
-	dijkstra.srcList[dataPtr]=this.src;
+	result.costList[dataPtr]=cost;
+	result.timeList[dataPtr]=time;
+	result.srcList[dataPtr]=this.src;
 	src=dataPtr;
+/*
+if(stop.dataPtr==382568) {
+console.log(this.src);
+}
+*/
 
 	posList=stop.posList;
 	seqList=stop.seqList;
@@ -115,6 +127,7 @@ reach.route.StopVisitor.prototype.visit=function(dijkstra) {
 		if(!seq.tripList.length) continue;
 
 		pos=posList[seqNum];
+//if(seq.firstPos>pos+1) continue;
 		tripNum=seq.findNextTime(timeQuery,pos,1);
 		trip=seq.tripList[tripNum];
 		depart=seq.stampList[tripNum]+trip.timeList[pos]*1000;
@@ -122,7 +135,7 @@ reach.route.StopVisitor.prototype.visit=function(dijkstra) {
 
 //		console.log('*\t\t'+gis.Q.formatTime(depart)+'\t'+trip.key.shortCode+'\t'+trip.key.sign);
 
-		costDelta=(depart-time)*conf.waitCostPerMS;
+		costDelta=(depart-time)*conf.waitCostPerMS+1.5*60*conf.timeDiv;
 		if(costDelta<1) costDelta=1;
 		dijkstra.found(reach.route.TripVisitor.create(dijkstra,seq,tripNum,pos,cost+costDelta,depart,src));
 	}

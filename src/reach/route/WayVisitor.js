@@ -17,6 +17,10 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/** @fileoverview Visitor for following roads in Dijkstra-style routing.
+  * Dijkstra's algorithm has been modified to store visitors
+  * instead of graph nodes in its priority queue. */
+
 goog.provide('reach.route.WayVisitor');
 goog.require('gis.Obj');
 goog.require('reach.route.Visitor');
@@ -28,33 +32,37 @@ goog.require('gis.osm.Way');
 reach.route.WayVisitor=function() {
 	reach.route.Visitor.call(this);
 
-	/** @type {gis.osm.Way} */
+	/** @type {gis.osm.Way} Road to follow. */
 	this.way;
-	/** @type {number} */
+	/** @type {number} Position along road. */
 	this.pos;
-	/** @type {number} */
+	/** @type {number} Direction to advance pos, -1 or 1. */
+	this.delta;
+	/** @type {number} Road accessibility factor 0-1, lower number increases cost. */
 	this.access;
 
-	/** @type {reach.route.WayVisitor} */
+	/** @type {reach.route.WayVisitor} Next item for linked list of free visitors. */
 	this.next;
 };
 
 gis.inherit(reach.route.WayVisitor,reach.route.Visitor);
 
-/** @type {reach.route.WayVisitor} */
+/** @type {reach.route.WayVisitor} Linked list of free visitors. */
 reach.route.WayVisitor.freeItem=null;
 
-/** @param {reach.route.Dijkstra} dijkstra
-  * @param {gis.osm.Way} way
-  * @param {number} pos
-  * @param {number} delta
-  * @param {number} cost
-  * @param {number} time
-  * @param {number} src
+/** Allocate and populate a new visitor.
+  * @param {reach.route.Dijkstra} dijkstra
+  * @param {gis.osm.Way} way Road to follow.
+  * @param {number} pos Position along road.
+  * @param {number} delta Direction to advance pos, -1 or 1.
+  * @param {number} cost Cost of the route so far.
+  * @param {number} time Time when road is reached.
+  * @param {number} src ID of location road was reached from.
   * @return {reach.route.WayVisitor} */
 reach.route.WayVisitor.create=function(dijkstra,way,pos,delta,cost,time,src) {
 	var self;
 
+	// Get visitor from free list or allocate new object.
 	self=reach.route.WayVisitor.freeItem;
 	if(self) reach.route.WayVisitor.freeItem=self.next;
 	else {
@@ -67,19 +75,26 @@ reach.route.WayVisitor.create=function(dijkstra,way,pos,delta,cost,time,src) {
 	self.cost=cost;
 	self.time=time;
 	self.src=src;
+	// Accessibility factor is precalculated from road type.
 	self.access=dijkstra.conf.profileAccessList[way.profile.id];
 
 	return(self);
 };
 
+/** Put visitor in free list to recycle it.
+  * @return {reach.route.Visitor.State} */
 reach.route.WayVisitor.prototype.free=function() {
 	this.next=reach.route.WayVisitor.freeItem;
 	reach.route.WayVisitor.freeItem=this;
+
 	return(reach.route.Visitor.State.OK);
 };
 
-/** @param {reach.route.Dijkstra} dijkstra */
-reach.route.WayVisitor.prototype.visit=function(dijkstra) {
+/** Visit the current position along a road and check what other places are reachable.
+  * @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Result} result
+  * @return {reach.route.Visitor.State} */
+reach.route.WayVisitor.prototype.visit=function(dijkstra,result) {
 	var way,other;
 	var pos,posOther;
 	var cost,costDelta,time;
@@ -100,67 +115,92 @@ reach.route.WayVisitor.prototype.visit=function(dijkstra) {
 	pos=this.pos;
 	cost=this.cost;
 	time=this.time;
+	// Position to update in result arrays.
 	dataPtr=way.dataPtr+pos;
 
-	if(dijkstra.costList[dataPtr] && dijkstra.costList[dataPtr]<=cost) return(this.free());
-//globalFoo++;
-//if(way.name) console.log(way.name);
-//console.log(cost);
+	// Exit and recycle visitor if this location has already been reached.
+	if(result.costList[dataPtr] && result.costList[dataPtr]<=cost) return(this.free());
 
 	src=this.src;
-	dijkstra.costList[dataPtr]=cost;
-	dijkstra.timeList[dataPtr]=time;
-	dijkstra.srcList[dataPtr]=src;
-
 	conf=dijkstra.conf;
 
-	// Stay to explore node where way was entered, if source is not another way.
-	if(src<conf.firstWayPtr || src>conf.lastWayPtr) dist=0;
-	else if(this.delta>0) {
-		pos++;
-		if(pos>=way.nodeList.length) return(this.free());
-		dist=way.nodeDistList[pos]-way.nodeDistList[pos-1];
-	} else {
-		pos--;
-		if(pos<0) return(this.free());
-		dist=way.nodeDistList[pos+1]-way.nodeDistList[pos];
-	}
+	result.costList[dataPtr]=cost;
+	result.timeList[dataPtr]=time;
+	result.srcList[dataPtr]=src;
 
 	src=dataPtr;
-
-	costDelta=dist*conf.walkCostPerM/this.access;
-	if(costDelta<1) costDelta=1;
-	cost+=costDelta;
-	time+=dist*conf.walkTimePerM;
 
 	node=way.nodeList[pos];
 	posList=node.posList;
 	wayList=node.wayList;
 	wayCount=wayList.length;
 
+	// Find other ways connected to next node.
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		other=wayList[wayNum];
 		posOther=posList[wayNum];
 		access=conf.profileAccessList[other.profile.id];
 		if(other==way && posOther==pos || !access) continue;
 
-		dijkstra.found(reach.route.WayVisitor.create(dijkstra,other,posOther,-1,cost,time,src));
-		dijkstra.found(reach.route.WayVisitor.create(dijkstra,other,posOther,1,cost,time,src));
+		// Create visitors along other way for exploring it in both directions.
+		dijkstra.found(reach.route.WayVisitor.create(dijkstra,other,posOther,0,cost+1,time,src));
+//		dijkstra.found(reach.route.WayVisitor.create(dijkstra,other,posOther,1,cost+1,time,src));
 	}
 
+	// Find stops connected to next node.
 	stopRefList=node.stopRefList;
 	if(stopRefList) {
 		refCount=stopRefList.length;
 		for(refNum=0;refNum<refCount;refNum++) {
 			ref=stopRefList[refNum];
-//console.log(ref.stop.name+' '+ref.dist+' '+(time+ref.dist*conf.walkTimePerM)+' '+time+' '+ref.dist+' '+conf.walkTimePerM);
+
 			costDelta=ref.dist*conf.walkCostPerM;
 			if(costDelta<1) costDelta=1;
+
+			// Create visitor for stop found.
+/*
+if(src==177108) {
+console.log(way);
+console.log(node);
+console.log(ref.stop);
+console.log(ref.stop.nodeRefList);
+}
+*/
 			dijkstra.found(reach.route.StopVisitor.create(dijkstra,ref.stop,cost+costDelta,time+ref.dist*conf.walkTimePerM,src));
-//			if(feature.getVisitor) dijkstra.found(feature.getVisitor(dijkstra,cost,time,src));
 		}
 	}
 
+//console.log('2 '+way.dataPtr+' '+pos+' '+this.delta);
+
+	if(this.delta>=0) {
+		if(this.delta==0 && pos>0) {
+			dist=way.nodeDistList[pos]-way.nodeDistList[pos-1];
+			dijkstra.found(reach.route.WayVisitor.create(dijkstra,way,pos-1,-1,cost+dist*conf.walkCostPerM/this.access+1,time+dist*conf.walkTimePerM,src));
+			this.delta=1;
+		}
+
+		// Advance towards the end of the road, exit and recycle visitor if past it.
+		pos++;
+		if(pos>=way.nodeList.length) return(this.free());
+		// Get distance to next node reached.
+		dist=way.nodeDistList[pos]-way.nodeDistList[pos-1];
+	} else {
+		// Advance towards the beginning of the road, exit and recycle visitor if past it.
+		pos--;
+		if(pos<0) return(this.free());
+		// Get distance to next node reached.
+		dist=way.nodeDistList[pos+1]-way.nodeDistList[pos];
+	}
+
+	// Calculate cost between current and next node.
+	costDelta=dist*conf.walkCostPerM/this.access;
+	// Cost must be 1 or more to ensure algorithm works correctly.
+	if(costDelta<1) costDelta=1;
+	cost+=costDelta;
+	// Time at next node.
+	time+=dist*conf.walkTimePerM;
+
+	// Update visitor to point to next node with new cost and time.
 	this.pos=pos;
 	this.cost=cost;
 	this.time=time;

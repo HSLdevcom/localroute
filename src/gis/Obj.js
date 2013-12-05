@@ -1,4 +1,4 @@
-/** @license
+/**
 	This file is part of LocalRoute.js.
 
 	Written in 2012, 2013 by Juha Järvi

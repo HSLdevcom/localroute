@@ -52,5 +52,6 @@ reach.route.Visitor.Src={
 };
 
 /** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Result} result
   * @return {reach.route.Visitor.State} */
-reach.route.Visitor.prototype.visit=function(dijkstra) {};
+reach.route.Visitor.prototype.visit=function(dijkstra,result) {};

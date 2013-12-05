@@ -56,7 +56,7 @@ reach.trans.ShapeSet.prototype.createShape=function() {
 	return(shape);
 };
 
-/** @param {gis.osm.PackStream} stream
+/** @param {gis.io.PackStream} stream
   * @param {number} detail */
 reach.trans.ShapeSet.prototype.exportPack=function(stream,detail) {
 	var roundOff;
@@ -85,7 +85,7 @@ reach.trans.ShapeSet.prototype.exportPack=function(stream,detail) {
 	}
 };
 
-/** @param {gis.osm.PackStream} stream
+/** @param {gis.io.PackStream} stream
   * @param {reach.trans.SeqSet} seqSet */
 reach.trans.ShapeSet.prototype.importPack=function(stream,seqSet) {
 	var detail;

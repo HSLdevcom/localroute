@@ -21,6 +21,7 @@ goog.provide('reach.route.Dijkstra');
 goog.require('gis.Obj');
 goog.require('reach.route.Conf');
 goog.require('reach.route.Visitor');
+goog.require('reach.route.Result');
 goog.require('reach.loc.Location');
 goog.require('gis.data.RadixHeap');
 
@@ -43,11 +44,14 @@ reach.route.Dijkstra=function() {
 	this.maxCost;
 
 	/** @type {Array.<number>} */
-	this.costList;
+//	this.costList;
 	/** @type {Array.<number>} */
-	this.timeList;
+//	this.timeList;
 	/** @type {Array.<number>} */
-	this.srcList;
+//	this.srcList;
+
+	/** @type {reach.route.Result} */
+	this.result;
 };
 
 /** @enum {boolean} */
@@ -72,9 +76,10 @@ reach.route.Dijkstra.prototype.start=function(locList,conf,time) {
 	this.maxCost=conf.maxCost;
 	this.queue=new gis.data.RadixHeap(this.maxCost);
 
-	this.costList=[];
-	this.timeList=[];
-	this.srcList=[];
+//	this.costList=[];
+//	this.timeList=[];
+//	this.srcList=[];
+	this.result=new reach.route.Result(conf);
 
 	// Get all visitor objects for all start locations and insert them into the priority queue.
 	locCount=locList.length;
@@ -109,6 +114,7 @@ reach.route.Dijkstra.prototype.step=function() {
 	var ret;
 
 	visitor=/** @type {reach.route.Visitor} */ (this.queue.extractMin());
+//console.log('d '+visitor.cost);
 	// Stop search if maxCost is reached.
 	if(!visitor || (this.maxCost>0 && visitor.cost>this.maxCost)) {
 		// Save memory by allowing the heap to be garbage collected.
@@ -116,15 +122,7 @@ reach.route.Dijkstra.prototype.step=function() {
 		return(1);
 	}
 
-	ret=visitor.visit(this);
-/*
-	if(ret==reach.route.Visitor.State.WAIT) {
-		// The visitor was interrupted, likely to wait for more data to load.
-		// Put it back in the heap so it's visited again next when routing can continue.
-		this.queue.insert(visitor,~~(visitor.cost+0.5));
-		return(-1);
-	}
-*/
+	ret=visitor.visit(this,this.result);
 
 	return(0);
 };
