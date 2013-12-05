@@ -420,6 +420,8 @@ reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 					self.prepareDesc(prevDesc);
 					if(tripDesc.done) {
 						console.log('ERROR in importTimes, call with fast=false!');
+						console.log(row);
+						return;
 					}
 				}
 
@@ -578,7 +580,15 @@ reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
 	function importRoutes() {self.importRoutes(self.readFile(path,'routes.txt'),importShapes);}
 	function importShapes() {self.importShapes(self.readFile(path,'shapes.txt'),importTrips);}
 	function importTrips() {self.importTrips(self.readFile(path,'trips.txt'),importTimes);}
-	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),true,done);}
+	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),false,prepare);}
+	function prepare() {
+		for(id in self.descTbl) {
+			if(!self.descTbl.hasOwnProperty(id)) continue;
+
+			self.prepareDesc(self.descTbl[id]);
+		}
+		done();
+	}
 
 	importStops();
 };
