@@ -76,6 +76,7 @@ function initNode() {
 		outMap:['out-map','FILE',null,'Output map data in a squeezed package'],
 		inMap:['M|in-map','FILE',null,'Input map data in a squeezed package'],
 		outOSM:['out-osm','FILE',null,'Output map data OpenStreetMap format'],
+		compressMap:['compress-map','',null,'Compress map data harder'],
 		bindTrans:['bind-trans','',null,'Bind public transport data with map data'],
 		from:['f|from','PLACE',null,'Routing start location'],
 		to:['t|to','PLACE',null,'Routing target location'],
@@ -85,7 +86,7 @@ function initNode() {
 //      verbose:['v|verbose',null,null,'Print more details'],
 //      stops:['stops','LIST',null,'Print cost of a predefined route'],
 //      nostops:['nostops','LIST',null,'Disable some stops'],
-    },[],'LocalRoute.js','2nd infrared aardvark');
+    },[],'LocalRoute.js','v0.1.0');
 
 	opt.parse(process.argv);
 	dateSys=new Date();
@@ -250,6 +251,23 @@ function initNode() {
 	}
 
 	// Processing.
+
+	if(opt.def.compressMap) {
+		taskList.push(function() {
+			mapSet.optimize(false);
+			mapSet.waySet.simplify(2,2);
+
+			mapSet.waySet.prepareTree();
+
+			mapSet.waySet.findLanes(20,15);
+			mapSet.waySet.mergeLanes(mapSet.nodeSet);
+
+			mapSet.optimize(false);
+			mapSet.waySet.calcDist();
+			mapSet.optimize(true);
+			nextTask();
+		});
+	}
 
 	if(opt.def.bindTrans) {
 		taskList.push(function() {
