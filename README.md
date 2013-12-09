@@ -40,19 +40,19 @@ cd build
 
 Afterwards, copy lr.js from dist directory to where you want it.
 
-Step 2: Preprocess schedule data.
+Step 2: Preprocess schedule data for 30 days starting from and including the given date parameter.
 
 ```
-node lr.js --date 2013-11-27 --in-gtfs helsinki.zip --out-tempt helsinki-transit.txt --out-gtfs-geom helsinki-geom.txt
+node lr.js --date 2013-12-02 --in-gtfs helsinki/gtfs.zip --out-tempt helsinki/readable.txt --out-gtfs-geom helsinki/geom.txt
 ```
 
-This preprocesses GTFS data in helsinki.zip, stores (somewhat) human-readable transit schedules in helsinki-transit.txt and
-(if the last, optional argument is passed) compresses original route polyline coordinates into helsinki-geom.txt.
+This preprocesses GTFS data in helsinki/gtfs.zip, stores (somewhat) human-readable transit schedules in helsinki/readable.txt and
+(if the last, optional argument is passed) compresses original route polyline coordinates into helsinki/geom.txt.
 
 Step 3: Preprocess map data.
 
 ```
-node lr.js --in-tempt helsinki-transit.txt --in-pbf helsinki.osm.pbf --out-map helsinki-map.txt
+node lr.js --in-tempt helsinki/readable.txt --in-pbf helsinki/osm.pbf --out-map helsinki/map-big.txt
 ```
 
 This reads previously stored transit data to get coordinates of transit stops used to guess the area relevant to routing.
@@ -61,13 +61,19 @@ Then it extracts map data in PBF format, applies basic compression and stores it
 Step 4: Compress schedule data.
 
 ```
-node lr.js --in-tempt helsinki-transit.txt --out-trans ../data/pack/helsinki.txt
+node lr.js --in-tempt helsinki/readable.txt --out-trans helsinki/trans.txt
 ```
 
-Step 5: Calculate routes!
+Step 5: (Optionally) compress map data. Note that --compress-map parameter needs to be last.
 
 ```
-TODO
+node lr.js --in-map helsinki/map-big.txt --out-map helsinki/map.txt --map-round 5 --compress-map
+```
+
+Step 6: Calculate routes! (Debug output for now)
+
+```
+node lr.js -M helsinki/map.txt -T helsinki/trans.txt -D 2013-12-03 -f 60.1688,24.9412 -t 60.3093,24.5141 -d 08:00
 ```
 
 ## Library structure
