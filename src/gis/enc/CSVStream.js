@@ -124,6 +124,7 @@ gis.enc.CSVStream.prototype.dump=function() {
 	var lineNum,lineCount;
 
 	groupList=this.groupList;
+	if(!groupList.length) return;
 	lineList=groupList[0];
 	lineCount=lineList.length;
 
