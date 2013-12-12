@@ -45,14 +45,17 @@ reach.route.Conf=function() {
 	/** @type {number} Unit: multiplication factor. */
 	this.costMulTrans=1;
 
-	/** @type {number} Unit: millisecond/m */
+	/** @type {number} Unit: millisecond/m. */
 	this.walkTimePerM=0;
-	/** @type {number} Unit: TU/m */
+	/** @type {number} Unit: TU/m. */
 	this.walkCostPerM=0;
-	/** @type {number} Unit: TU/millisecond */
+	/** @type {number} Unit: TU/millisecond. */
 	this.waitCostPerMS=0;
-	/** @type {number} Unit: TU/millisecond */
+	/** @type {number} Unit: TU/millisecond. */
 	this.transCostPerMS=0;
+
+	/** @type {number} Unit: milliseconds. */
+	this.altRouteSpan=60*60*1000;
 
 	/** @type {Array.<number>} */
 	this.profileAccessList;

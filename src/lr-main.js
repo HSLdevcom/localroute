@@ -317,7 +317,7 @@ function initNode() {
 			mapSet.waySet.prepareTree();
 
 			geoCoder=new reach.route.GeoCoder(mapSet,transSet);
-			batch=new reach.route.Batch(mapSet,geoCoder);
+			batch=new reach.route.Batch(mapSet,geoCoder,transSet);
 			batch.prepareAccess(conf);
 
 			mapSet.waySet.forWays(function(way) {
@@ -325,75 +325,8 @@ function initNode() {
 			});
 
 			if(transSet) {
-				mapSet.waySet.clearMarks();
-				stopNum=0;
-
-				transSet.stopSet.forStops(function(stop) {
-					var loc;
-					var refList;
-					var refNum,refCount;
-					var ref;
-					var way;
-
-					loc=new reach.loc.Outdoor(stop.ll,mapSet);
-					refList=loc.getNodes(conf,++stopNum);
-					refCount=refList.length;
-
-					if(!refCount) {
-//						console.log('Failed to bind stop '+stop.name);
-						return;
-					}
-
-					for(refNum=0;refNum<refCount;refNum++) {
-						ref=refList[refNum];
-						way=ref.way;
-						node=ref.node;
-						if(!node.stopRefList) node.stopRefList=[];
-						node.stopRefList.push({stop:stop,dist:ref.dist});
-
-						if(!stop.nodeRefList) stop.nodeRefList=[];
-						stop.nodeRefList.push(ref);
-					}
-				});
-
-				mapSet.iterId=stopNum+1;
-			}
-
-			conf.ptrWayFirst=dataPtr;
-
-			mapSet.waySet.forWays(function(way) {
-				way.getNodes();
-
-				way.iterId=wayNum++;
-				way.dataPtr=dataPtr;
-
-				dataPtr+=way.nodeList.length;
-			});
-
-			conf.ptrWayLast=dataPtr-1;
-
-			if(transSet) {
-				conf.ptrStopFirst=dataPtr;
-
-				transSet.stopSet.forStops(
-					/** @param {reach.trans.Stop} stop */
-					function(stop) {
-						stop.dataPtr=dataPtr++;
-					}
-				);
-
-				conf.ptrStopLast=dataPtr-1;
-				conf.ptrSeqFirst=dataPtr;
-
-				transSet.seqSet.forSeqs(
-					/** @param {reach.trans.Seq} seq */
-					function(seq) {
-						seq.dataPtr=dataPtr;
-						dataPtr+=seq.stopList.length;
-					}
-				);
-
-				conf.ptrSeqLast=dataPtr-1;
+				batch.bindStops(transSet.stopSet,conf);
+				batch.prepareRefs(transSet,conf);
 			}
 
 			batch.run(geoCoder.find(opt.def.from),conf,depart);

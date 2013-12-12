@@ -47,8 +47,10 @@ reach.route.Visitor.State={
 
 /** @enum {number} */
 reach.route.Visitor.Src={
-	WAY:0,
-	TRIP:1
+	NONE:0,
+	WAY:1,
+	TRIP:2,
+	STOP:3
 };
 
 /** @param {reach.route.Dijkstra} dijkstra

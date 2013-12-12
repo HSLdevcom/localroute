@@ -116,7 +116,7 @@ reach.route.Dijkstra.prototype.step=function() {
 	visitor=/** @type {reach.route.Visitor} */ (this.queue.extractMin());
 //console.log('d '+visitor.cost);
 	// Stop search if maxCost is reached.
-	if(!visitor || (this.maxCost>0 && visitor.cost>this.maxCost)) {
+	if(!visitor || (visitor.cost>this.maxCost && this.maxCost>0)) {
 		// Save memory by allowing the heap to be garbage collected.
 		this.queue=null;
 		return(1);

@@ -53,9 +53,9 @@ gis.osm.Way=function() {
 	/** @type {number} Index of first point in ptList, if points have been deleted from the beginning. */
 	this.ptStart=0;
 
-	/** @type {Array.<gis.osm.Node>} */
+	/** @type {Array.<gis.osm.Node>} List of nodes, they define intersections while bends are irrelevant to routing. */
 	this.nodeList;
-	/** @type {Array.<number>} */
+	/** @type {Array.<number>} Cumulative distance along way to each node. */
 	this.nodeDistList;
 
 	/** @type {string} Street name. */
@@ -71,22 +71,24 @@ gis.osm.Way=function() {
 	/** @type {boolean} */
 	this.important;
 
-	/** @type {number} */
+	/** @type {number} Temporary ID used in various traversals, for example during data export. */
 	this.iterId=0;
-	/** @type {number} */
+	/** @type {number} Index to data table with a slot for each node along each way. */
 	this.dataPtr;
+	/** @type {number} Way unique ID. */
+	this.id;
 
 	/** @type {gis.osm.WayChain} Chain of ways used to link split ways of similar type. */
 	this.chain;
 
-	/** @type {Array.<gis.osm.Way>} */
+	/** @type {Array.<gis.osm.Way>} Other nearby ways. */
 	this.nearWayList;
 	/** @type {Array.<number>} */
 	this.nearPosList;
 
-	/** @type {Array.<number|gis.osm.Node>} */
+	/** @type {Array.<number|gis.osm.Node>} Other points not on the way but nearby along it. */
 	this.extraPtList;
-	/** @type {Array.<number>} */
+	/** @type {Array.<number>} Positions of the other points as fractional values between way points. */
 	this.extraPosList;
 };
 

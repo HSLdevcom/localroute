@@ -180,7 +180,7 @@ reach.loc.Outdoor.prototype.getVisitors=function(dijkstra,conf,cost,time) {
 		ref=refList[refNum];
 		dist=ref.dist;
 		node=ref.way.nodeList[ref.pos];
-		visitorList.push(reach.route.WayVisitor.create(dijkstra,ref.way,ref.pos,ref.delta,cost+dist*conf.walkCostPerM,time+dist*conf.walkTimePerM,-1));
+		visitorList.push(reach.route.WayVisitor.create(dijkstra,ref.way,ref.pos,ref.delta,cost+dist*conf.walkCostPerM,time+dist*conf.walkTimePerM,0));
 	}
 
 	return(visitorList);

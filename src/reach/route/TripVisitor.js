@@ -68,8 +68,7 @@ reach.route.TripVisitor.create=function(dijkstra,seq,tripNum,pos,cost,time,src) 
 	self.cost=cost;
 	self.time=time;
 	self.src=src;
-	self.enter=seq.dataPtr+pos;
-//seq.firstPos=pos;
+	self.enter=pos;
 
 	return(self);
 };
@@ -94,38 +93,35 @@ reach.route.TripVisitor.prototype.visit=function(dijkstra,result) {
 	var conf;
 	var stamp;
 	var stop;
+	var src;
 
 	seq=this.seq;
 	pos=this.pos;
 	cost=this.cost;
-	time=this.time;
-	tripNum=this.tripNum;
 	dataPtr=seq.dataPtr+pos;
 
 	if(result.costList[dataPtr] && result.costList[dataPtr]<=cost) return(this.free());
 
 	result.costList[dataPtr]=cost;
-//	result.timeList[dataPtr]=time;
-	result.srcList[dataPtr]=tripNum;
-//	src=dataPtr;
 
 	pos++;
 	if(pos>=seq.stopList.length) return(this.free());
 
+	tripNum=this.tripNum;
 	trip=seq.tripList[tripNum];
 
 	conf=dijkstra.conf;
 	stamp=seq.stampList[tripNum]+trip.timeList[pos]*1000;
-	costDelta=(stamp-time)*conf.transCostPerMS;
+	costDelta=(stamp-this.time)*conf.transCostPerMS;
 	if(costDelta<1) costDelta=1;
 
 	cost+=costDelta;
 	time=stamp;
 
 	stop=seq.stopList[pos];
-	if(this.src!=stop.dataPtr) {
-		dijkstra.found(reach.route.StopVisitor.create(dijkstra,stop,cost+1.5*60*conf.timeDiv,time,this.enter));
-	}
+	// 25 bits for trip number, 24 bits for stop sequence index per stop.
+	src=tripNum*0x10000000+seq.posList[pos]*0x10+reach.route.Visitor.Src.TRIP;
+	dijkstra.found(reach.route.StopVisitor.create(dijkstra,stop,cost+1.5*60*conf.timeDiv,time,src,this.enter));
 
 	this.pos=pos;
 	this.cost=cost;

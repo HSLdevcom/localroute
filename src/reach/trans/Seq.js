@@ -30,7 +30,7 @@ reach.trans.Seq=function() {
 	/** @type {Array.<reach.trans.Stop>} */
 	this.stopList=[];
 	/** @type {Array.<number>} */
-//	this.distList=[];
+	this.posList=[];
 	/** @type {Array.<reach.trans.Trip>} */
 	this.tripList=[];
 	/** @type {Array.<reach.trans.Trip>} */
@@ -106,4 +106,11 @@ reach.trans.Seq.prototype.findNextTime=function(time,pos,delta) {
 	} while((stamp-time)*delta>=0);
 
 	return(mid+delta);
+};
+
+reach.trans.Seq.prototype.insert=function(stop,pos) {
+	this.stopList[pos]=stop;
+	this.posList[pos]=stop.seqList.length;
+	stop.seqList.push(this);
+	stop.posList.push(pos);
 };

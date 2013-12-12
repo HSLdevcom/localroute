@@ -519,11 +519,13 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	}
 
 	shape=tripDesc.shape;
-	if(!shape.sorted) shape.sortPoints();
-	if(!shape.seqTbl[seq.id]) {
-		shape.seqTbl[seq.id]=seq;
-		shape.seqList.push(seq);
-		seq.shapeList.push(shape);
+	if(shape) {
+		if(!shape.sorted) shape.sortPoints();
+		if(!shape.seqTbl[seq.id]) {
+			shape.seqTbl[seq.id]=seq;
+			shape.seqList.push(seq);
+			seq.shapeList.push(shape);
+		}
 	}
 
 	key=seq.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
@@ -573,6 +575,9 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
 	/** @type {reach.trans.GTFS} */
 	var self=this;
+	var fast;
+
+	fast=true;
 
 	function importStops() {self.importStops(self.readFile(path,'stops.txt'),importWeeks);}
 	function importWeeks() {self.importWeeks(self.readFile(path,'calendar.txt'),startDate,totalDays,importDays);}
@@ -580,12 +585,14 @@ reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
 	function importRoutes() {self.importRoutes(self.readFile(path,'routes.txt'),importShapes);}
 	function importShapes() {self.importShapes(self.readFile(path,'shapes.txt'),importTrips);}
 	function importTrips() {self.importTrips(self.readFile(path,'trips.txt'),importTimes);}
-	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),false,prepare);}
+	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),fast,prepare);}
 	function prepare() {
-		for(id in self.descTbl) {
-			if(!self.descTbl.hasOwnProperty(id)) continue;
+		if(!fast) {
+			for(id in self.descTbl) {
+				if(!self.descTbl.hasOwnProperty(id)) continue;
 
-			self.prepareDesc(self.descTbl[id]);
+				self.prepareDesc(self.descTbl[id]);
+			}
 		}
 		done();
 	}

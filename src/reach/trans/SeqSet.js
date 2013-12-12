@@ -262,10 +262,7 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 				stopCount=dec[0];
 				stopNum=0;
 				stop=stopSet.list[dec[1]];
-
-				stop.seqList.push(seq);
-				stop.posList.push(stopNum);
-				seq.stopList[stopNum++]=stop;
+				seq.insert(stop,stopNum++);
 
 				seq.followerList=[];
 
@@ -279,27 +276,19 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 						while(id--) {
 							seq.followerList[stopNum-1]=0;
 							stop=stop.followerList[0];
-
-							stop.seqList.push(seq);
-							stop.posList.push(stopNum);
-							seq.stopList[stopNum++]=stop;
+							seq.insert(stop,stopNum++);
 						}
 					} else if(id<maxRep+followerCount) {
+						// Next stop has already been seen after this stop in other stop sequences so its full ID and reach time aren't needed.
 						seq.followerList[stopNum-1]=id-maxRep+1;
 						stop=stop.followerList[id-maxRep+1];
-
-						// Next stop has already been seen after this stop in other stop sequences so its full ID and reach time aren't needed.
-						stop.seqList.push(seq);
-						stop.posList.push(stopNum);
-						seq.stopList[stopNum++]=stop;
+						seq.insert(stop,stopNum++);
 					} else {
 						seq.followerList[stopNum-1]=followerCount;
 
 						prevStop=stop;
 						stop=stopSet.list[id-followerCount-maxRep];
-						stop.seqList.push(seq);
-						stop.posList.push(stopNum);
-						seq.stopList[stopNum++]=stop;
+						seq.insert(stop,stopNum++);
 
 						prevStop.followerList[followerCount]=stop;
 					}

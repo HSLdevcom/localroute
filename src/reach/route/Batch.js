@@ -156,7 +156,7 @@ reach.route.Batch.prototype.prepareRefs=function(transSet,conf) {
 	mapSet.waySet.forWays(function(way) {
 		way.getNodes();
 
-		way.iterId=wayNum++;
+		way.id=wayNum++;
 		way.dataPtr=dataPtr;
 
 		dataPtr+=way.nodeList.length;
@@ -164,29 +164,29 @@ reach.route.Batch.prototype.prepareRefs=function(transSet,conf) {
 
 	conf.ptrWayLast=dataPtr-1;
 
-	if(transSet) {
-		conf.ptrStopFirst=dataPtr;
+	if(!transSet) return;
 
-		transSet.stopSet.forStops(
-			/** @param {reach.trans.Stop} stop */
-			function(stop) {
-				stop.dataPtr=dataPtr++;
-			}
-		);
+	conf.ptrStopFirst=dataPtr;
 
-		conf.ptrStopLast=dataPtr-1;
-		conf.ptrSeqFirst=dataPtr;
+	transSet.stopSet.forStops(
+		/** @param {reach.trans.Stop} stop */
+		function(stop) {
+			stop.dataPtr=dataPtr++;
+		}
+	);
 
-		transSet.seqSet.forSeqs(
-			/** @param {reach.trans.Seq} seq */
-			function(seq) {
-				seq.dataPtr=dataPtr;
-				dataPtr+=seq.stopList.length;
-			}
-		);
+	conf.ptrStopLast=dataPtr-1;
+	conf.ptrSeqFirst=dataPtr;
 
-		conf.ptrSeqLast=dataPtr-1;
-	}
+	transSet.seqSet.forSeqs(
+		/** @param {reach.trans.Seq} seq */
+		function(seq) {
+			seq.dataPtr=dataPtr;
+			dataPtr+=seq.stopList.length;
+		}
+	);
+
+	conf.ptrSeqLast=dataPtr-1;
 };
 
 /** @param {reach.loc.Location} locTo */
@@ -197,12 +197,12 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 	var ref,refBest;
 	var cost,costBest;
 	var srcList;
+	var src;
 	var timeList;
 	var legList;
 	var leg;
 	var ptList;
 	var mode;
-	var way;
 	var pos,pos2;
 	var node;
 	var wayList;
@@ -212,6 +212,8 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 	var stop;
 	var seqList;
 	var seqNum,seqCount;
+	var tripNum;
+	var trip;
 	var deg;
 	var json;
 
@@ -238,6 +240,7 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 
 	srcList=result.srcList;
 	timeList=result.timeList;
+	enterList=result.enterList;
 
 	mode='w';
 	way=refBest.way;
@@ -245,7 +248,6 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 
 	while(1) {
 		if(mode=='w') {
-//console.log(mode+' '+(way.dataPtr+pos));
 			if(!leg) {
 				leg={
 					'mode':'WALK',
@@ -257,44 +259,20 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 				ptList=[];
 			}
 
-//			console.log(pos+'\t'+way.name);
+console.log(pos+' '+way.nodeList.length+' '+way.id+' '+src);
 			deg=way.nodeList[pos].ll.toDeg();
 			ptList.push([deg.llat*100000,deg.llon*100000]);
 
 			src=srcList[way.dataPtr+pos];
-			if(src>=way.dataPtr && src<way.dataPtr+way.nodeCount) {
-				// Stay on the same road.
-				pos=src-way.dataPtr;
-			} else if(src>=conf.ptrWayFirst && src<=conf.ptrWayLast) {
-//console.log((way.dataPtr+pos)+' w->w '+src);
-				node=way.nodeList[pos];
-				wayList=node.wayList;
-				wayCount=wayList.length;
-
-				for(wayNum=0;wayNum<wayCount;wayNum++) {
-					way=wayList[wayNum];
-//					if(src==way.dataPtr+node.posList[wayNum]) break; Doesn't work because src is not at the intersection.
-					if(src>=way.dataPtr && src<way.dataPtr+way.nodeList.length) break;
-				}
-
-				if(wayNum>=wayCount) return(null);
-
-				pos=src-way.dataPtr;
-			} else if(src>=conf.ptrStopFirst && src<=conf.ptrStopLast) {
-//console.log((way.dataPtr+pos)+' w->s '+src);
+			if((src&0xf)==reach.route.Visitor.Src.WAY) {
+				way=this.mapSet.waySet.list[~~(src/0x10000000)];
+				pos=(src>>>4)&0xffffff;
+			} else if((src&0xf)==reach.route.Visitor.Src.STOP) {
 				leg['startTime']=timeList[way.dataPtr+pos];
 				leg['duration']=leg['endTime']-leg['startTime'];
 				leg['legGeometry']={'points':ptList.reverse()};
 
-				stopRefList=way.nodeList[pos].stopRefList;
-				refCount=stopRefList.length;
-
-				for(refNum=0;refNum<refCount;refNum++) {
-					stop=stopRefList[refNum].stop;
-					if(stop.dataPtr==src) break;
-				}
-
-				if(refNum>=refCount) return(null);
+				stop=this.transSet.stopSet.list[src>>>4];
 
 				leg=null;
 				mode='s';
@@ -306,24 +284,15 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 				break;
 			}
 		} else if(mode=='s') {
-//console.log(mode+' '+stop.dataPtr);
 			console.log(stop.name);
 			src=srcList[stop.dataPtr];
 
-			if(src>=conf.ptrSeqFirst && src<=conf.ptrSeqLast) {
-//console.log(stop.dataPtr+' s->t '+src);
-				seqList=stop.seqList;
-				seqCount=seqList.length;
-
-				for(seqNum=0;seqNum<seqCount;seqNum++) {
-					seq=seqList[seqNum];
-					if(src>=seq.dataPtr && src<seq.dataPtr+seq.stopList.length) break;
-				}
-
-				if(seqNum>=seqCount) return(null);
-
+			if((src&0xf)==reach.route.Visitor.Src.TRIP) {
+				seqNum=(src>>>4)&0xffffff;
+				seq=stop.seqList[seqNum];
 				pos=stop.posList[seqNum];
-				trip=seq.tripList[srcList[seq.dataPtr+pos]];
+				tripNum=~~(src/0x10000000);
+				trip=seq.tripList[tripNum];
 
 				if(!leg) {
 					leg={
@@ -341,12 +310,12 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 						'stop':stop
 					};
 
-					leg['endTime']=seq.stampList[srcList[seq.dataPtr+pos]]+trip.timeList[pos]*1000;
+					leg['endTime']=seq.stampList[tripNum]+trip.timeList[pos]*1000;
 					legList.push(leg);
 					ptList=[];
 				}
 
-				pos2=src-seq.dataPtr;
+				pos2=enterList[stop.id];
 				while(1) {
 					deg=stop.ll.toDeg();
 					ptList.push([deg.llat*100000,deg.llon*100000]);
@@ -354,10 +323,6 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 					pos--;
 					stop=seq.stopList[pos];
 				}
-
-//				console.log(trip.key.shortCode+' '+trip.key.sign);
-//				pos=src-seq.dataPtr;
-//				stop=seq.stopList[pos];
 
 				deg=stop.ll.toDeg();
 				leg['from']={
@@ -367,44 +332,15 @@ reach.route.Batch.prototype.getRoute=function(locTo,conf,result) {
 					'stop':stop
 				};
 
-				leg['startTime']=seq.stampList[srcList[seq.dataPtr+pos]]+trip.timeList[pos]*1000;
+				leg['startTime']=seq.stampList[tripNum]+trip.timeList[pos]*1000;
 				leg['duration']=leg['endTime']-leg['startTime'];
 				leg['legGeometry']={'points':ptList.reverse()};
 
 				leg=null;
-			} else if(src>=conf.ptrWayFirst && src<=conf.ptrWayLast) {
-//console.log(stop.dataPtr+' s->w '+src);
-				nodeRefList=stop.nodeRefList;
-				refCount=nodeRefList.length;
+			} else if((src&0xf)==reach.route.Visitor.Src.WAY) {
+				way=this.mapSet.waySet.list[~~(src/0x10000000)];
+				pos=(src>>>4)&0xffffff;
 
-				// TODO: Here we check all ways connected to the stop's nearest node.
-				// Instead the stop's source should be set to the correct way directly, maybe by removing stoprefs from nodes and putting
-				// them into ways.
-foo:
-				for(refNum=0;refNum<refCount;refNum++) {
-					way=nodeRefList[refNum].way;
-					pos=nodeRefList[refNum].pos;
-					node=way.nodeList[pos];
-
-					wayList=node.wayList;
-					wayCount=wayList.length;
-
-					for(wayNum=0;wayNum<wayCount;wayNum++) {
-						way=wayList[wayNum];
-						if(src>=way.dataPtr && src<way.dataPtr+way.nodeList.length) {
-							pos=src-way.dataPtr;
-							break foo;
-						}
-					}
-
-					// TODO: this line should replace the loop above if stop's source was set to the correct way.
-//					if(src==way.dataPtr+pos) break;
-				}
-
-				if(refNum>=refCount) return(null);
-
-//				pos=nodeRefList[refNum].pos;
-console.log(way.nodeList[pos].ll.toDeg());
 				mode='w';
 			} else {
 				break;

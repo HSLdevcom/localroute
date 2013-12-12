@@ -32,4 +32,10 @@ reach.route.Result=function(conf) {
 	this.timeList=[];
 	/** @type {Array.<number>} */
 	this.srcList=[];
+	/** @type {Array.<number>} */
+	this.enterList=[];
+	/** @type {Array.<Array.<number>>} */
+	this.stopSrcList=[];
+	/** @type {Array.<Array.<number>>} */
+	this.stopEnterList=[];
 };
