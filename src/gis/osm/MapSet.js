@@ -1,4 +1,4 @@
-/*
+/** @license
 	OSM Squeezer
 
 	Copyright (c) "2013, by Aalto University, Finland;
@@ -56,6 +56,8 @@ gis.osm.MapSet=function() {
 	this.profileSet=new gis.osm.ProfileSet();
 	/** @type {gis.osm.WaySet} */
 	this.waySet=new gis.osm.WaySet();
+	/** @type {number} */
+	this.iterId=0;
 };
 
 /** @param {boolean} harder */
@@ -78,10 +80,12 @@ gis.osm.MapSet.prototype.optimize=function(harder) {
 /** @param {gis.io.PackStream} stream */
 gis.osm.MapSet.prototype.exportPack=function(stream) {
 	var nameSet;
+	var metaSet;
 	var profileSet;
 	var waySet;
 
 	nameSet=this.nameSet;
+	metaSet=this.metaSet;
 	profileSet=this.profileSet;
 	waySet=this.waySet;
 
@@ -89,6 +93,7 @@ gis.osm.MapSet.prototype.exportPack=function(stream) {
 	waySet.markProfiles();
 	profileSet.sortProfiles();
 
+	metaSet.getNames(nameSet);
 	waySet.getNames(nameSet);
 	nameSet.sortNames();
 console.log(nameSet.list.length+' names');
@@ -97,6 +102,8 @@ console.log(nameSet.list.length+' names');
 	profileSet.exportPack(stream);
 
 	waySet.exportPack(stream,nameSet);
+
+	metaSet.exportBindPack(stream,nameSet);
 
 /*
 	for(dataNum=0;dataNum<dataCount;dataNum++) {

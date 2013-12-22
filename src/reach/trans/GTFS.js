@@ -27,8 +27,9 @@ goog.require('gis.MU');
 goog.require('gis.util.Date');
 goog.require('gis.enc.CSVStream');
 goog.require('reach.trans.Stop');
-goog.require('reach.trans.Seq');
+goog.require('reach.trans.Shape');
 goog.require('reach.trans.Trip');
+goog.require('reach.trans.Seq');
 
 /** @constructor
   * @param {reach.trans.TransSet} transSet */
@@ -41,6 +42,8 @@ reach.trans.GTFS=function(transSet) {
 	this.validTbl={};
 	/** @type {Object.<string,reach.trans.GTFS.RouteDesc>} */
 	this.routeTbl={};
+	/** @type {Object.<string,reach.trans.Shape>} */
+	this.shapeTbl={};
 	/** @type {Object.<string,reach.trans.GTFS.TripDesc>} */
 	this.descTbl={};
 	/** @type {Object.<string,reach.trans.Trip>} */
@@ -284,12 +287,55 @@ reach.trans.GTFS.prototype.importRoutes=function(stream,done) {
 
 /** @param {gis.enc.CSVStream} stream
   * @param {function()} done */
+reach.trans.GTFS.prototype.importShapes=function(stream,done) {
+	var self=this;
+	var rowNum;
+	var shapeTbl;
+	var shape;
+	var ll;
+
+	var fieldTbl;
+	var shapeCol,latCol,lonCol,posCol;
+
+	shapeSet=this.transSet.shapeSet;
+	shapeTbl=this.shapeTbl;
+
+	rowNum=0;
+
+	/** @param {Array.<string>} row */
+	stream.on('data',function(row) {
+		if(!rowNum++) {
+			fieldTbl=self.getFields(row);
+
+			shapeCol=fieldTbl['shape_id'];
+			latCol=fieldTbl['shape_pt_lat'];
+			lonCol=fieldTbl['shape_pt_lon'];
+			posCol=fieldTbl['shape_pt_sequence'];
+		} else {
+			shape=shapeTbl[row[shapeCol]];
+			if(!shape) {
+				shape=shapeSet.createShape();
+				shapeTbl[row[shapeCol]]=shape;
+			}
+			ll=new gis.Deg(row[latCol],row[lonCol]).toMU();
+			shape.insert(row[posCol],ll.llat,ll.llon);
+		}
+	});
+
+	stream.on('end',function() {
+		done();
+	});
+};
+
+/** @param {gis.enc.CSVStream} stream
+  * @param {function()} done */
 reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 	var self=this;
 	var rowNum;
 	/** @type {Object.<string,number>} */
 	var validTbl;
 	var descTbl;
+	var shapeTbl;
 
 	var fieldTbl;
 	var routeCol,validCol,idCol,signCol;
@@ -297,6 +343,7 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 
 	validTbl=this.validTbl;
 	descTbl=this.descTbl;
+	shapeTbl=this.shapeTbl;
 	rowNum=0;
 
 	/** @param {Array.<string>} row */
@@ -311,6 +358,7 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 			validCol=fieldTbl['service_id'];
 			idCol=fieldTbl['trip_id'];
 			signCol=fieldTbl['trip_headsign'];
+			shapeCol=fieldTbl['shape_id'];
 		} else {
 			valid=validTbl[row[validCol]];
 			if(!valid) return;
@@ -318,7 +366,7 @@ reach.trans.GTFS.prototype.importTrips=function(stream,done) {
 			sign=row[signCol];
 			if(!sign) sign='';
 
-			tripDesc={route:row[routeCol],valid:valid,sign:sign,arriveList:[],departList:[],stopList:[],flagList:[],done:false};
+			tripDesc={route:row[routeCol],valid:valid,sign:sign,arriveList:[],departList:[],stopList:[],flagList:[],shape:shapeTbl[row[shapeCol]],done:false};
 			descTbl[row[idCol]]=tripDesc;
 		}
 	});
@@ -372,6 +420,8 @@ reach.trans.GTFS.prototype.importTimes=function(stream,fast,done) {
 					self.prepareDesc(prevDesc);
 					if(tripDesc.done) {
 						console.log('ERROR in importTimes, call with fast=false!');
+						console.log(row);
+						return;
 					}
 				}
 
@@ -409,6 +459,7 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var seqSet;
 	var seqTbl;
 	var seq;
+	var shape;
 	var keySet;
 	var keyTbl;
 	var keyObj;
@@ -418,7 +469,7 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	var tripSet;
 	var tripTbl;
 	var trip;
-	var arrive,depart;
+	var arrive,depart,time;
 
 	seqSet=this.transSet.seqSet;
 	keySet=this.transSet.keySet;
@@ -462,11 +513,19 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 			stopList[stopNum]=stopTbl[refList[stopNum]];
 		}
 
-		seq=new reach.trans.Seq();
+		seq=seqSet.createSeq();
 		seq.stopList=stopList;
-
 		seqTbl[key]=seq;
-		seqSet.insert(seq);
+	}
+
+	shape=tripDesc.shape;
+	if(shape) {
+		if(!shape.sorted) shape.sortPoints();
+		if(!shape.seqTbl[seq.id]) {
+			shape.seqTbl[seq.id]=seq;
+			shape.seqList.push(seq);
+			seq.shapeList.push(shape);
+		}
 	}
 
 	key=seq.id+'\t'+tripDesc.route+'\t'+tripDesc.sign;
@@ -487,10 +546,16 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 	key+='\t'+timeList.join('\t');
 	trip=tripTbl[key];
 	if(!trip) {
+		time=0;
+		for(stopNum=1;stopNum<stopCount;stopNum++) {
+			time+=timeList[stopNum];
+			timeList[stopNum]=time;
+		}
+
 		trip=new reach.trans.Trip(keyObj);
 		trip.valid=tripDesc.valid;
 		trip.timeList=timeList;
-		trip.startTime=timeList[0];
+//		trip.startTime=timeList[0];
 
 		tripTbl[key]=trip;
 		tripSet.insert(trip);
@@ -510,13 +575,27 @@ reach.trans.GTFS.prototype.prepareDesc=function(tripDesc) {
 reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
 	/** @type {reach.trans.GTFS} */
 	var self=this;
+	var fast;
+
+	fast=true;
 
 	function importStops() {self.importStops(self.readFile(path,'stops.txt'),importWeeks);}
 	function importWeeks() {self.importWeeks(self.readFile(path,'calendar.txt'),startDate,totalDays,importDays);}
 	function importDays() {self.importDays(self.readFile(path,'calendar_dates.txt'),startDate,totalDays,importRoutes);}
-	function importRoutes() {self.importRoutes(self.readFile(path,'routes.txt'),importTrips);}
+	function importRoutes() {self.importRoutes(self.readFile(path,'routes.txt'),importShapes);}
+	function importShapes() {self.importShapes(self.readFile(path,'shapes.txt'),importTrips);}
 	function importTrips() {self.importTrips(self.readFile(path,'trips.txt'),importTimes);}
-	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),true,done);}
+	function importTimes() {self.importTimes(self.readFile(path,'stop_times.txt'),fast,prepare);}
+	function prepare() {
+		if(!fast) {
+			for(id in self.descTbl) {
+				if(!self.descTbl.hasOwnProperty(id)) continue;
+
+				self.prepareDesc(self.descTbl[id]);
+			}
+		}
+		done();
+	}
 
 	importStops();
 };

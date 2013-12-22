@@ -18,8 +18,10 @@
 */
 
 goog.provide('reach.route.Dijkstra');
+goog.require('gis.Obj');
 goog.require('reach.route.Conf');
 goog.require('reach.route.Visitor');
+goog.require('reach.route.Result');
 goog.require('reach.loc.Location');
 goog.require('gis.data.RadixHeap');
 
@@ -33,13 +35,23 @@ reach.route.Dijkstra=function() {
 	/** @type {number} */
 	this.runId=0;
 
-	/** @type {number} Stop Dijkstra when cost becomes too large */
-	this.maxCost=0;
-
 	/** @type {reach.route.Dijkstra.Dir} Direction of time as cost increases, boolean enum. */
 	this.dir=reach.route.Dijkstra.Dir.FORWARD;
 	/** @type {number} Direction of time as cost increases, multiplication factor 1 or -1. */
 	this.timeDelta=1;
+
+	/** @type {number} */
+	this.maxCost;
+
+	/** @type {Array.<number>} */
+//	this.costList;
+	/** @type {Array.<number>} */
+//	this.timeList;
+	/** @type {Array.<number>} */
+//	this.srcList;
+
+	/** @type {reach.route.Result} */
+	this.result;
 };
 
 /** @enum {boolean} */
@@ -50,24 +62,31 @@ reach.route.Dijkstra.Dir={
 
 /** @param {Array.<reach.loc.Location>} locList
   * @param {reach.route.Conf} conf */
-reach.route.Dijkstra.prototype.start=function(locList,conf) {
+reach.route.Dijkstra.prototype.start=function(locList,conf,time) {
 	var locNum,locCount;
 	var loc;
 	var visitorList;
 	var visitorNum,visitorCount;
+	var visitor;
 
 	this.runId++;
 	this.conf=conf;
 
+	conf.init();
 	this.maxCost=conf.maxCost;
 	this.queue=new gis.data.RadixHeap(this.maxCost);
+
+//	this.costList=[];
+//	this.timeList=[];
+//	this.srcList=[];
+	this.result=new reach.route.Result(conf);
 
 	// Get all visitor objects for all start locations and insert them into the priority queue.
 	locCount=locList.length;
 	for(locNum=0;locNum<locCount;locNum++) {
 		loc=locList[locNum];
 
-		visitorList=loc.getVisitors();
+		visitorList=loc.getVisitors(this,conf,1,time);
 		visitorCount=visitorList.length;
 
 		for(visitorNum=0;visitorNum<visitorCount;visitorNum++) {
@@ -95,22 +114,15 @@ reach.route.Dijkstra.prototype.step=function() {
 	var ret;
 
 	visitor=/** @type {reach.route.Visitor} */ (this.queue.extractMin());
+//console.log('d '+visitor.cost);
 	// Stop search if maxCost is reached.
-	if(!visitor || (this.maxCost>0 && visitor.cost>this.maxCost)) {
+	if(!visitor || (visitor.cost>this.maxCost && this.maxCost>0)) {
 		// Save memory by allowing the heap to be garbage collected.
 		this.queue=null;
 		return(1);
 	}
 
-	ret=visitor.visit(this);
-/*
-	if(ret==reach.route.Visitor.State.WAIT) {
-		// The visitor was interrupted, likely to wait for more data to load.
-		// Put it back in the heap so it's visited again next when routing can continue.
-		this.queue.insert(visitor,~~(visitor.cost+0.5));
-		return(-1);
-	}
-*/
+	ret=visitor.visit(this,this.result);
 
 	return(0);
 };

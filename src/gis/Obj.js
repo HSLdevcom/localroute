@@ -1,4 +1,4 @@
-/** @license
+/**
 	This file is part of LocalRoute.js.
 
 	Written in 2012, 2013 by Juha Järvi
@@ -26,7 +26,6 @@ gis.inherit=function(subClass,parentClass) {
 	Obj=/** @constructor */ function() {};
 	Obj.prototype=parentClass.prototype;
 	subClass.prototype=new Obj();
-//	subClass.parentClass=parentClass;
 };
 
 gis.env={};

@@ -28,6 +28,9 @@ reach.route.Visitor=function() {
 	this.cost=0;
 	/** @type {number} */
 	this.time=0;
+	/** @type {number} */
+	this.src=0;
+
 	/** @type {number} Index of this stop in Dijkstra's heap. */
 	this.heapIndex;
 	/** @type {reach.route.Visitor} */
@@ -42,6 +45,15 @@ reach.route.Visitor.State={
 	WAIT:-1
 };
 
+/** @enum {number} */
+reach.route.Visitor.Src={
+	NONE:0,
+	WAY:1,
+	TRIP:2,
+	STOP:3
+};
+
 /** @param {reach.route.Dijkstra} dijkstra
+  * @param {reach.route.Result} result
   * @return {reach.route.Visitor.State} */
-reach.route.Visitor.prototype.visit=function(dijkstra) {};
+reach.route.Visitor.prototype.visit=function(dijkstra,result) {};

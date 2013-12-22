@@ -38,11 +38,15 @@ reach.trans.SeqSet=function() {
 	this.validAccept;
 };
 
-/** @param {reach.trans.Seq} seq
+/** @param {number=} id
   * @return {reach.trans.Seq} */
-reach.trans.SeqSet.prototype.insert=function(seq) {
-	seq.id=this.count;
-	this.list[this.count++]=seq;
+reach.trans.SeqSet.prototype.createSeq=function(id) {
+	var seq;
+
+	if(!id && id!==0) id=this.count++;
+	seq=new reach.trans.Seq();
+	seq.id=id;
+	this.list[id]=seq;
 
 	return(seq);
 };
@@ -88,13 +92,13 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 	txt=stream.readLine();
 
 	seqCount=+txt;
-	seqList=[];
-	seqList.length=seqCount;
+	this.list=[];
+	this.list.length=seqCount;
 	this.count=seqCount;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
 		fieldList=stream.readLine().split('\t');
-		seq=new reach.trans.Seq();
+		seq=this.createSeq(+fieldList[0]);
 
 		stopCount=fieldList.length-1;
 		stopList=[];
@@ -104,15 +108,12 @@ reach.trans.SeqSet.prototype.importTempPack=function(stream,stopSet) {
 			stopList[stopNum]=stopSet.list[+fieldList[stopNum+1]];
 		}
 
-		seq.id=+fieldList[0];
 		seq.stopList=stopList;
-		seqList[seqNum]=seq;
 	}
-
-	this.list=seqList;
 };
 
-reach.trans.SeqSet.prototype.clearTrips=function() {
+/** @param {function(reach.trans.Seq)} handler */
+reach.trans.SeqSet.prototype.forSeqs=function(handler) {
 	var seqList;
 	var seqNum,seqCount;
 
@@ -120,25 +121,47 @@ reach.trans.SeqSet.prototype.clearTrips=function() {
 	seqCount=this.count;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
-		seqList[seqNum].tripList=[];
+		handler(seqList[seqNum]);
 	}
 };
 
 reach.trans.SeqSet.prototype.sortTrips=function() {
 	var seqList;
 	var seqNum,seqCount;
+	var seq;
+	var stampList;
+	var tripList;
+	var tripNum,tripCount;
+	var trip;
+	var tripRefList;
 
-	/** @param {reach.trans.Trip} a
-	  * @param {reach.trans.Trip} b */
+	/** @param {{stamp:number,trip:reach.trans.Trip}} a
+	  * @param {{stamp:number,trip:reach.trans.Trip}} b */
 	function compareTrips(a,b) {
-		return(a.startTime-b.startTime);
+		return(a.stamp-b.stamp);
 	}
 
 	seqList=this.list;
 	seqCount=this.count;
 
 	for(seqNum=0;seqNum<seqCount;seqNum++) {
-		seqList[seqNum].tripList.sort(compareTrips);
+		seq=seqList[seqNum];
+		tripRefList=[];
+
+		stampList=seq.stampList;
+		tripList=seq.tripList;
+		tripCount=tripList.length;
+
+		for(tripNum=0;tripNum<tripCount;tripNum++) {
+			tripRefList[tripNum]={stamp:stampList[tripNum],trip:tripList[tripNum]};
+		}
+
+		tripRefList.sort(compareTrips);
+
+		for(tripNum=0;tripNum<tripCount;tripNum++) {
+			stampList[tripNum]=tripRefList[tripNum].stamp;
+			tripList[tripNum]=tripRefList[tripNum].trip;
+		}
 	}
 };
 
@@ -233,16 +256,13 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 
 			// Iterate to load info for each stop sequence.
 			case 1:
-				seq=new reach.trans.Seq();
+				seq=self.createSeq();
 
 				stream.readShort(dec,2);
 				stopCount=dec[0];
 				stopNum=0;
 				stop=stopSet.list[dec[1]];
-
-				stop.seqList.push(seq);
-				stop.posList.push(stopNum);
-				seq.stopList[stopNum++]=stop;
+				seq.insert(stop,stopNum++);
 
 				seq.followerList=[];
 
@@ -256,33 +276,23 @@ reach.trans.SeqSet.prototype.importPack=function(stream,stopSet) {
 						while(id--) {
 							seq.followerList[stopNum-1]=0;
 							stop=stop.followerList[0];
-
-							stop.seqList.push(seq);
-							stop.posList.push(stopNum);
-							seq.stopList[stopNum++]=stop;
+							seq.insert(stop,stopNum++);
 						}
 					} else if(id<maxRep+followerCount) {
+						// Next stop has already been seen after this stop in other stop sequences so its full ID and reach time aren't needed.
 						seq.followerList[stopNum-1]=id-maxRep+1;
 						stop=stop.followerList[id-maxRep+1];
-
-						// Next stop has already been seen after this stop in other stop sequences so its full ID and reach time aren't needed.
-						stop.seqList.push(seq);
-						stop.posList.push(stopNum);
-						seq.stopList[stopNum++]=stop;
+						seq.insert(stop,stopNum++);
 					} else {
 						seq.followerList[stopNum-1]=followerCount;
 
 						prevStop=stop;
 						stop=stopSet.list[id-followerCount-maxRep];
-						stop.seqList.push(seq);
-						stop.posList.push(stopNum);
-						seq.stopList[stopNum++]=stop;
+						seq.insert(stop,stopNum++);
 
 						prevStop.followerList[followerCount]=stop;
 					}
 				}
-
-				self.insert(seq);
 
 				seqCount--;
 				return(seqCount);

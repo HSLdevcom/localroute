@@ -106,6 +106,23 @@ gis.osm.WaySet.prototype.insertNodes=function(ptList,profile,name,nodeSet) {
 	return(way);
 };
 
+/** @param {function(gis.osm.Way)} handler */
+gis.osm.WaySet.prototype.forWays=function(handler) {
+	var wayList;
+	var wayNum,wayCount;
+	var way;
+
+	wayList=this.list;
+	wayCount=this.count;
+
+	for(wayNum=0;wayNum<wayCount;wayNum++) {
+		way=wayList[wayNum];
+		if(way.deleted) continue;
+
+		handler(way);
+	}
+};
+
 /** Add distance information to all ways. */
 gis.osm.WaySet.prototype.calcDist=function() {
 	var wayList;
@@ -603,7 +620,7 @@ gis.osm.WaySet.prototype.exportPack=function(stream,nameSet) {
 	detail=this.detail;
 	if(!detail) detail=gis.osm.WaySet.detail;
 	tileSize=gis.osm.WaySet.tileSize-detail;
-	roundOff=(1<<detail)>>1;
+	roundOff=((1<<detail)-1)>>1;
 	tileOff=(1<<tileSize)>>1;
 
 	exportTbl={};
@@ -636,6 +653,7 @@ gis.osm.WaySet.prototype.exportPack=function(stream,nameSet) {
 	namedList=/** @type {Array.<gis.osm.Way>} */ ([]);
 	anonList=/** @type {Array.<gis.osm.Way>} */ ([]);
 
+	// Separate named and unnamed ways.
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		way=wayList[wayNum];
 
@@ -698,7 +716,7 @@ gis.osm.WaySet.prototype.importPack=function(stream,nodeSet,profileSet,nameSet,g
 	state={
 		detail:detail,
 		tileSize:tileSize,
-		roundOff:(1<<detail)>>1,
+		roundOff:((1<<detail)-1)>>1,
 		tileOff:(1<<tileSize)>>1,
 
 		nameId:0,
@@ -928,7 +946,7 @@ gis.osm.WaySet.prototype.prepareTree=function() {
 
 /** Match unnamed ways like sidewalks to a nearby parallel named street, by checking all nodes.
   * @param {number} maxDist Maximum distance between matching ways.
-  * @param {number} angleWeight Distance penalty for perpendicular ways. Multiplied by tangent so parallel ways get zero penalty. */
+  * @param {number} angleWeight Distance penalty for ways off by 45 degrees. Multiplied by tangent so parallel ways get zero penalty. */
 gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 	var tree;
 	var wayList;
@@ -965,7 +983,7 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 		way.nearWayList=[];
 		way.nearPosList=[];
 
-		off=maxDist/gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1));  // Adjust scale for Mercator distortion.
+		off=maxDist/gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1)).north;  // Adjust scale for Mercator distortion.
 		// Look for nearby ways in the quadtree as far from the root as possible for speed.
 		// Start from a tile containing the entire way to match, expanded with a maxDist-sized buffer.
 		tile=tree.findEnclosing(new gis.geom.BB(bb.lat1-off,bb.lon1-off,bb.lat2+off,bb.lon2+off));
@@ -996,14 +1014,14 @@ gis.osm.WaySet.prototype.findLanes=function(maxDist,angleWeight) {
 					/** @param {gis.osm.Way} other */
 					function(other) {
 						// Match unnamed ways only to named ways on the same layer (tunnel/bridge etc.)
-						return(other.name && other.profile.matchLayer(way.profile));
+						return(+(other.name && other.profile.matchLayer(way.profile)));
 					}
 				);
 				other=near.way;
 
 				if(other) {
 					near={way:null,sqDist:off*off,pos:0,posNext:0,offset:0};
-					other.findNearest(lat,lon,other.ptStart,other.ptList.length-1,near,0,0,0);
+					other.findNearest(lat,lon,other.ptStart,other.ptList.length-1,near,0,0,0,0);
 					pos=near.pos;
 					offset=near.offset;
 /*

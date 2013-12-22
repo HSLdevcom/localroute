@@ -186,11 +186,9 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 					if(stop) stopList[stopCount++]=stop;
 				}
 
-				seq=new reach.trans.Seq();
+				seq=seqSet.createSeq();
 				seq.stopList=stopList;
-
 				seqTbl[stopData]=seq;
-				seqSet.insert(seq);
 			}
 
 			key=seq.id+'\t'+mode+'\t'+key;
@@ -212,21 +210,25 @@ reach.trans.Kalkati.prototype.importZip=function(path,startDate,totalDays,output
 
 				timeList=[];
 				timeCount=0;
-				prevTime=0;
+//				prevTime=0;
+				firstTime=0;
 
 				refCount=tripTimeList.length;
 				for(refNum=0;refNum<refCount;refNum++) {
 					if(!tripTimeList[refNum]) continue;
 					time=+tripTimeList[refNum];
 					time=(~~(time/100)*60+time%100)*60;
-					timeList[timeCount++]=time-prevTime;
-					prevTime=time;
+//					timeList[timeCount++]=time-prevTime;
+					timeList[timeCount]=time-firstTime;
+					if(!timeCount) firstTime=time;
+					timeCount++;
+//					prevTime=time;
 				}
 
 				trip=new reach.trans.Trip(seq,keyObj);
 				trip.valid=valid;
 				trip.timeList=timeList;
-				trip.startTime=timeList[0];
+//				trip.startTime=timeList[0];
 
 				tripTbl[timeData]=trip;
 				tripSet.insert(trip);

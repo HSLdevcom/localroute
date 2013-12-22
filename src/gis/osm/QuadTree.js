@@ -101,16 +101,19 @@ gis.osm.QuadTree.prototype.insertWay=function(way) {
   * @param {number} dlatSrc
   * @param {number} dlonSrc
   * @param {number} angleWeight
-  * @param {function(gis.osm.Way):boolean} checker
+  * @param {function(gis.osm.Way):number} checker
   * @return {gis.osm.Way.Near} */
 gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,dlonSrc,angleWeight,checker) {
+	var scale;
 	/** @type {Array.<gis.osm.QuadTile>} */
 	var tileStack;
 	var stackPos;
 	var nearest,sentinel;
 
-	snapDist/=gis.MU.getScale(lat);
-	angleWeight/=gis.MU.getScale(lat);
+	scale=gis.MU.getScale(lat).north;
+	snapDist/=scale;
+	angleWeight/=scale;
+//	scale*=Math.sqrt(2);
 
 	tileStack=/** @type {Array.<gis.osm.QuadTile>} */ ([root]);
 	stackPos=1;
@@ -132,7 +135,7 @@ gis.osm.QuadTree.prototype.findWay=function(lat,lon,name,snapDist,root,dlatSrc,d
 
 			quadList=tile.quadList;
 			if(!quadList) {
-				nearest=tile.findWay(lat,lon,name,nearest,dlatSrc,dlonSrc,angleWeight,checker);
+				nearest=tile.findWay(lat,lon,name,nearest,dlatSrc,dlonSrc,angleWeight,scale,checker);
 				continue;
 			}
 

@@ -219,7 +219,7 @@ gis.util.Opt.prototype.printUsage=function() {
 		alias+=' '+conf[restTbl[this.restConf[i]]][1];
 	}
 
-	console.log(this.appName+' [OPTION]...'+alias);
+	console.log(process.argv[0]+' '+process.argv[1]+' [OPTION]...'+alias);
 
 	for(i=0;i<l;i++) {
 		alias=conf[restTbl[this.restConf[i]]][1];

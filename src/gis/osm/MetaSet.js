@@ -38,6 +38,7 @@
 goog.provide('gis.osm.MetaSet');
 goog.require('gis.Obj');
 goog.require('gis.osm.Meta');
+goog.require('gis.osm.meta.Stop');
 goog.require('gis.osm.TagTable');
 
 /** @constructor */
@@ -46,12 +47,14 @@ gis.osm.MetaSet=function() {
 	this.list=[];
 	/** @type {Object.<number,gis.osm.Meta>} */
 	this.tbl={};
+
+	/** @type {Array.<gis.osm.Node>} */
+	this.nodeList=[];
 };
 
 /** @param {gis.osm.TagTable} tagTbl
   * @return {gis.osm.Meta} */
-gis.osm.MetaSet.prototype.parseNode=function(tagTbl) {
-/*
+gis.osm.MetaSet.prototype.parse=function(tagTbl,type) {
 	var stop;
 	var roadType;
 	var transType;
@@ -64,16 +67,20 @@ gis.osm.MetaSet.prototype.parseNode=function(tagTbl) {
 
 	if(roadType=='bus_stop' || transType=='stop_position' || transType=='platform') {
 		// Public transit stop.
-		stop=new gis.osm.trans.Stop();
+		stop=new gis.osm.meta.Stop();
 		stop.name=tagTbl.getString('name');
 		stop.ref=tagTbl.getString('ref');
 
 		this.list.push(stop);
 		return(stop);
 	}
-*/
 
 	return(null);
+};
+
+/** @param {gis.osm.Node} node */
+gis.osm.MetaSet.prototype.insertNode=function(node) {
+	this.nodeList.push(node);
 };
 
 /** @param {gis.osm.TagTable} tagTbl
@@ -144,8 +151,114 @@ gis.osm.MetaSet.prototype.parseRel=function(tagTbl,roleList,memberList) {
 	return(null);
 };
 
+gis.osm.MetaSet.prototype.forMetas=function(handler) {
+	var metaList;
+	var metaNum,metaCount;
+
+	metaList=this.list;
+	metaCount=metaList.length;
+
+	for(metaNum=0;metaNum<metaCount;metaNum++) {
+		handler(metaList[metaNum]);
+	}
+};
+
+/** @param {gis.enc.NameSet} nameSet */
+gis.osm.MetaSet.prototype.getNames=function(nameSet) {
+	this.forMetas(function(meta) {
+		meta.getNames(nameSet);
+	});
+};
+
+/** Update reference counts to metadata. */
+gis.osm.MetaSet.prototype.countRefs=function() {
+	var nodeList;
+	var nodeNum,nodeCount;
+	var meta;
+
+	this.forMetas(function(meta) {
+		meta.count=0;
+	});
+
+	nodeList=this.nodeList;
+	nodeCount=nodeList.length;
+
+	for(nodeNum=0;nodeNum<nodeCount;nodeNum++) {
+		meta=nodeList[nodeNum].meta;
+		if(meta) meta.count++;
+	}
+};
+
+/** @param {gis.io.PackStream} stream
+  * @param {gis.enc.NameSet} nameSet */
+/*
+gis.osm.MetaSet.prototype.exportPack=function(stream,nameSet) {
+	var metaList;
+
+	this.countRefs();
+
+	metaList=this.list;
+	metaList.sort(function(a,b) {return(b.count-a.count);});
+
+	metaCount=metalist.length;
+	stream.writeLong([metaCount]);
+
+	for(metaNum=0;metaNum<metaCount;metaNum++) {
+		metaList[metaNum].exportPack(stream,nameSet);
+	}
+};
+*/
+
 /** @param {gis.io.PackStream} stream */
-gis.osm.MetaSet.prototype.exportPack=function(stream,nodeSet) {
+gis.osm.MetaSet.prototype.exportBindPack=function(stream,nameSet) {
+	var nodeList;
+	var nodeNum,nodeCount;
+	var id,idPrev,idMeta;
+	var nodeRefList;
+	var nodeRefNum,nodeRefCount;
+	var meta;
+	var outList;
+
+	nodeList=this.nodeList;
+
+	nodeList.sort(
+		/** @param {gis.osm.Node} a
+		  * @param {gis.osm.Node} b */
+		function(a,b) {return(a.iterId-b.iterId);}
+	);
+
+	nodeCount=nodeList.length;
+	for(nodeNum=0;nodeNum<nodeCount;nodeNum++) {
+		meta=nodeList[nodeNum].meta;
+		if(!meta) continue;
+
+		if(!meta.nodeList) meta.nodeList=[];
+		meta.nodeList.push(nodeList[nodeNum]);
+	}
+
+	idMeta=0;
+
+	for(nodeNum=0;nodeNum<nodeCount;nodeNum++) {
+		meta=nodeList[nodeNum].meta;
+		if(!meta) continue;
+
+		nodeRefList=meta.nodeList;
+		nodeRefCount=nodeRefList.length;
+
+		outList=[nodeRefCount];
+		meta.exportPack(stream,nameSet);
+
+		idPrev=idMeta;
+		for(nodeRefNum=0;nodeRefNum<nodeRefCount;nodeRefNum++) {
+			id=nodeRefList[nodeRefNum].iterId;
+			outList.push(id-idPrev);
+			idPrev=id;
+		}
+		idMeta=nodeRefList[0].iterId;
+
+		stream.writeLong(outList);
+	}
+
 /*
 	var featureList;
 	var featureNum,featureCount;

@@ -119,11 +119,11 @@ reach.trans.StopSet.prototype.clearFollowers=function() {
 	for(stopNum=0;stopNum<stopCount;stopNum++) {
 		stop=stopList[stopNum];
 
-		stop.followerTbl={};
+//		stop.followerTbl={};
 		stop.followerList=[];
 		stop.followerCount=0;
-		stop.durationsTo=[];
-		stop.statsTo=[];
+//		stop.durationsTo=[];
+//		stop.statsTo=[];
 		stop.packNumTbl={};
 		stop.packCount=0;
 	}
@@ -229,7 +229,7 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 //				stop=new reach.trans.Stop(nameSet.list[origId],nameSet.list[nameId],ll);
 				stop=self.insert(nameSet.list[origId],nameSet.list[nameId],ll);
 				stop.followerList=[];
-				stop.statsTo=[];
+//				stop.statsTo=[];
 //				self.insert(stop);
 
 				return(--stopCount);
@@ -238,6 +238,17 @@ reach.trans.StopSet.prototype.importPack=function(stream,nameSet) {
 
 	step=0;
 	return(advance);
+};
+
+/** @param {function(reach.trans.Stop):boolean} handler */
+reach.trans.StopSet.prototype.forStops=function(handler) {
+	var stopNum,stopCount;
+	var stop;
+
+	stopCount=this.list.length;
+	for(stopNum=0;stopNum<stopCount;stopNum++) {
+		handler(this.list[stopNum]);
+	}
 };
 
 /** @param {Array.<reach.trans.Stop>} stopList

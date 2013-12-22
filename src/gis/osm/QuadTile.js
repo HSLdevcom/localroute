@@ -357,27 +357,34 @@ gis.osm.QuadTile.prototype.split=function(maxNodes,depth) {
   * @param {number} dlatSrc
   * @param {number} dlonSrc
   * @param {number} angleWeight
-  * @param {function(gis.osm.Way):boolean} checker
+  * @param {number} scale
+  * @param {function(gis.osm.Way):number} checker
   * @return {gis.osm.Way.Near} */
-gis.osm.QuadTile.prototype.findWay=function(lat,lon,name,nearest,dlatSrc,dlonSrc,angleWeight,checker) {
+gis.osm.QuadTile.prototype.findWay=function(lat,lon,name,nearest,dlatSrc,dlonSrc,angleWeight,scale,checker) {
+	var firstList,lastList;
+	var accept;
 	var wayList;
 	var wayNum,wayCount;
 	var way;
-	var firstList,lastList;
 
-	wayList=this.wayList;
 	firstList=this.firstList;
 	lastList=this.lastList;
+	accept=0;
 
+	wayList=this.wayList;
 	wayCount=wayList.length;
 
 	for(wayNum=0;wayNum<wayCount;wayNum++) {
 		way=wayList[wayNum];
 		if(way.deleted) continue;
 		if(name && !way.matchName(name)) continue;
-		if(checker && !checker(way)) continue;
+		if(checker) {
+			accept=checker(way);
+			if(!accept) continue;
+			accept=(accept-1)/scale;
+		}
 
-		way.findNearest(lat,lon,firstList[wayNum],lastList[wayNum],nearest,dlatSrc,dlonSrc,angleWeight);
+		way.findNearest(lat,lon,firstList[wayNum],lastList[wayNum],nearest,dlatSrc,dlonSrc,angleWeight,accept);
 	}
 
 	return(nearest);

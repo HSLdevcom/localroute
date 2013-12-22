@@ -17,29 +17,25 @@
 	along with LocalRoute.js.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-goog.provide('reach.loc.Location');
+goog.provide('reach.route.Result');
 goog.require('gis.Obj');
-goog.require('gis.MU');
+goog.require('reach.route.Conf');
 
-/** @constructor */
-reach.loc.Location=function() {
-	/** @type {reach.MU} */
-	this.ll;
-	/** @type {string} */
-//	this.id='';
-	/** @type {number} */
-	this.runId=0;
-	/** @type {number} */
-	this.cost=0;
-	/** @type {number} */
-	this.time=0;
-	/** @type {Array.<string>} */
-	this.fieldList;
+/** @constructor
+  * @param {reach.route.Conf} conf */
+reach.route.Result=function(conf) {
+	/** @type {reach.route.Conf} */
+	this.conf=conf;
+	/** @type {Array.<number>} */
+	this.costList=[];
+	/** @type {Array.<number>} */
+	this.timeList=[];
+	/** @type {Array.<number>} */
+	this.srcList=[];
+	/** @type {Array.<number>} */
+	this.enterList=[];
+	/** @type {Array.<Array.<number>>} */
+	this.stopSrcList=[];
+	/** @type {Array.<Array.<number>>} */
+	this.stopEnterList=[];
 };
-
-/** @param {reach.route.Dijkstra} dijkstra
-  * @param {reach.route.Conf} conf
-  * @param {number} cost
-  * @param {number} time
-  * @return {Array.<reach.route.Visitor>} */
-reach.loc.Location.prototype.getVisitors=function(dijkstra,conf,cost,time) {};

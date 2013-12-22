@@ -26,15 +26,15 @@ reach.trans.Trip=function(key) {
 	this.key=key;
 	/** @type {number} */
 	this.valid;
-	/** @type {Array.<number>|Uint32Array} Unit: minutes. */
-	this.deltaList;
-	/** @type {Array.<number>} Unit: minutes. */
+	/** @type {Array.<number>|Uint32Array} Unit: seconds. */
+//	this.deltaList;
+	/** @type {Array.<number>} Unit: seconds. */
 	this.timeList;
 
-	/** @type {number} Unit: minutes. */
-	this.startTime;
-	/** @type {number} Unit: minutes. */
-	this.duration;
+	/** @type {number} Unit: seconds. */
+//	this.startTime;
+	/** @type {number} Unit: seconds. */
+//	this.duration;
 	/** @type {number} */
 	this.id;
 };

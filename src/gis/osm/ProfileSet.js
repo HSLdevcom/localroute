@@ -82,7 +82,7 @@ gis.osm.ProfileSet=function() {
 		t.FOOTWAY, 'footway bus_stop platform',
 		t.FOOTWAY, 'crossing',
 		t.PATH,    'path bridleway',
-		t.STAIRS,  'escalator steps',	// TODO: these should have different cost, walking on stairs is less fun.
+		t.STAIRS,  'steps escalator',	// TODO: these should have different cost, walking on stairs is less fun.
 		t.PARKING, 'services'
 	];
 
@@ -100,6 +100,7 @@ gis.osm.ProfileSet=function() {
 	];
 
 	accessCodeTbl={
+		't':gis.osm.ProfileSet.access.TRANSIT,
 		'c':gis.osm.ProfileSet.access.CAR,
 		'b':gis.osm.ProfileSet.access.BIKE,
 		'f':gis.osm.ProfileSet.access.FOOT,
@@ -108,22 +109,22 @@ gis.osm.ProfileSet=function() {
 
 	// Modes for transport allowed by default for each way type.
 	// c=car, b=bike, f=foot, w=wheelchair. Capitals mean more suitable.
-	accessList=/** @type {Array.<gis.osm.WayProfile.Type|string>} */ ([			// TODO: these should be integers on a scale 0-9 or .oO or .-+#
-		t.HIGHWAY, 'C',
-		t.HIGHLINK, 'C',
-		t.FASTCARS,'Cb',	// TODO: it's possible to go on foot on roadside if no other way exists, so allow with high penalty.
-		t.SLOWCARS,'CBf',
-		t.BUS,     '',
+	accessList=/** @type {Array.<gis.osm.WayProfile.Type|string>} */ ([			// TODO: these should be integers on a scale 0-8.
+		t.HIGHWAY, 'TC',
+		t.HIGHLINK,'TC',
+		t.FASTCARS,'TCb',	// TODO: it's possible to go on foot on roadside if no other way exists, so allow with high penalty.
+		t.SLOWCARS,'TCBf',
+		t.BUS,     'T',
 		t.RAIL,    '',
 		t.AIR,     '',
-		t.CARPATH, 'cBf',
-		t.HOMEZONE,'cBFW',
-		t.CYCLEWAY, 'Bf',
-		t.FOOTWAY,   'FW',
-		t.PLATFORM,  'FW',
-		t.PATH,     'BF',	// TODO: wheelchair is OK for certain surfaces (paved, asphalt, sett, concrete, concrete:lanes, concrete:plates, paving_stones:*, compacted, fine_gravel, tartan).
-		t.STAIRS,    'F',	// TODO: stairs should have a penalty, especially for wheelchairs even if wheelchair=yes. Escalators have lower penalty and are oneway?
-		t.PARKING ,'cBfw'
+		t.CARPATH, 'tcBf',
+		t.HOMEZONE,'tcBFW',
+		t.CYCLEWAY,  'Bf',
+		t.FOOTWAY,    'FW',
+		t.PLATFORM,   'FW',
+		t.PATH,      'BF',	// TODO: wheelchair is OK for certain surfaces (paved, asphalt, sett, concrete, concrete:lanes, concrete:plates, paving_stones:*, compacted, fine_gravel, tartan).
+		t.STAIRS,     'F',	// TODO: stairs should have a penalty, especially for wheelchairs even if wheelchair=yes. Escalators have lower penalty and are oneway?
+		t.PARKING ,'tcBfw'
     ]);
 
 	wayClassTbl={};
@@ -173,10 +174,11 @@ gis.osm.ProfileSet=function() {
 };
 
 gis.osm.ProfileSet.access={
-	CAR:1,
-	BIKE:2,
-	FOOT:4,
-	WHEEL:8
+	TRANSIT:1,
+	CAR:2,
+	BIKE:4,
+	FOOT:8,
+	WHEEL:16
 };
 
 /** @param {gis.osm.TagTable} tagTbl
@@ -207,6 +209,7 @@ gis.osm.ProfileSet.prototype.insertWay=function(tagTbl,stream) {
 
 	profile.oneway=tagTbl.getBool('oneway',null,1);
 	if(profile.oneway==gis.osm.TagTable.REVERSE) profile.oneway=-1;
+	// TODO: handle oneway:bicycle=no, cycleway=opposite, cycleway:left=opposite_lane, psv=opposite_lane...
 
 	// TODO: lane number guessing should be done after linking way chains.
 	profile.lanes=tagTbl.getNum('lanes',null,null);
@@ -236,6 +239,8 @@ gis.osm.ProfileSet.prototype.insertWay=function(tagTbl,stream) {
 	setAccess(tagTbl.getBool('bike',null,1),gis.osm.ProfileSet.access.BIKE);
 	setAccess(tagTbl.getBool('foot',null,1),gis.osm.ProfileSet.access.FOOT);
 	setAccess(tagTbl.getBool('wheelchair',null,1),gis.osm.ProfileSet.access.WHEEL);
+	setAccess(tagTbl.getBool('bus',null,1),gis.osm.ProfileSet.access.TRANSIT);
+	setAccess(tagTbl.getBool('psv',null,1),gis.osm.ProfileSet.access.TRANSIT);
 
 	if(accessFlag==0.5) limit=access;
 

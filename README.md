@@ -1,13 +1,80 @@
-# localroute.js
+# LocalRoute.js
 
-localroute.js calculates public transport itineraries on mobile devices,
-even when offline. To make it feasible,
-[GTFS](https://developers.google.com/transit/gtfs/) timetables are
-preprocessed and compressed into a custom format. These comparatively tiny
-files are delivered to the client and decompressed before use.
+LocalRoute.js calculates public transport routes on web browsers and mobile
+devices, online and offline. Map, route and timetable information from
+open data sources is preprocessed and compressed into a custom format.
+These comparatively tiny files are delivered to the client and decompressed
+before use.
 
-localroute.js enables the users to avoid extortionate data roaming prices
-while abroad or to maintain their travelling privacy.
+LocalRoute.js guarantees routing availability and zero unexpected costs also
+abroad, and maintains the user's privacy.
+
+- Supported timetable formats: [GTFS](https://developers.google.com/transit/gtfs/), Kalkati.
+- Input map data format: [PBF](https://developers.google.com/protocol-buffers/)-compressed OpenStreetMap.
+
+## Quick start
+
+Step 1: Build the project.
+
+Simply append all necessary source files:
+```
+cd build
+./compile-debug-shim.sh lr
+```
+
+OR
+
+Compile with plovr. Download plovr.jar under bin and run:
+```
+cd build
+java -jar ../bin/plovr.jar plovr.json > ../dist/lr.js
+```
+
+OR
+
+Compile with Google Closure Compiler. Download compiler.jar under bin and run:
+```
+cd build
+./compile-debug-shim.sh lr
+```
+
+Afterwards, copy lr.js from dist directory to where you want it.
+
+Step 2: Preprocess schedule data for 30 days starting from and including the given date parameter.
+
+```
+node lr.js --date 2013-12-02 --in-gtfs helsinki/gtfs.zip --out-tempt helsinki/readable.txt --out-gtfs-geom helsinki/geom.txt
+```
+
+This preprocesses GTFS data in helsinki/gtfs.zip, stores (somewhat) human-readable transit schedules in helsinki/readable.txt and
+(if the last, optional argument is passed) compresses original route polyline coordinates into helsinki/geom.txt.
+
+Step 3: Preprocess map data.
+
+```
+node lr.js --in-tempt helsinki/readable.txt --in-pbf helsinki/osm.pbf --out-map helsinki/map-big.txt
+```
+
+This reads previously stored transit data to get coordinates of transit stops used to guess the area relevant to routing.
+Then it extracts map data in PBF format, applies basic compression and stores it in helsinki-map.txt.
+
+Step 4: Compress schedule data.
+
+```
+node lr.js --in-tempt helsinki/readable.txt --out-trans helsinki/trans.txt
+```
+
+Step 5: (Optionally) compress map data. Note that --compress-map parameter needs to be last.
+
+```
+node lr.js --in-map helsinki/map-big.txt --out-map helsinki/map.txt --map-round 5 --compress-map
+```
+
+Step 6: Calculate routes! (Debug output for now)
+
+```
+node lr.js -M helsinki/map.txt -T helsinki/trans.txt -D 2013-12-03 -f 60.1688,24.9412 -t 60.3093,24.5141 -d 08:00
+```
 
 ## Library structure
 
@@ -23,64 +90,6 @@ the public uses to identify the route is connected to every trip.
 
 A line is the list of stops passed along a vehicle's route, and in the future
 also its geometry. It has no other information.
-
-## Useful API functions
-
-* transSet=new reach.trans.TransSet();
-* transSet.importData(transData);
-* transSet.prepareDay(gis.util.Date.fromYMD(2013,10,4));
-* lines=transSet.lineSet.find({name:'eira',code:'18'});
-* stops=transSet.stopSet.find({name:'kamppi',lines:lines});
-* arrivals=stops[0].getArrivals();
-
-The prepareDay call filters all data so that "find" and "getArrivals" commands
-return data for the selected day.
-
-After the above commands, to print the stop timetable:
-```js
-arrivals.map(
-	function(arrival) {
-		console.log(
-			~~(arrival.time/3600)+':'+
-			gis.Q.zeroPad(~~(arrival.time/60)%60,2)+' '+
-			arrival.trip.key.shortCode+' '+
-			arrival.trip.key.sign);
-		return(arrival.trip);
-	}
-);
-```
-Compare to [Official timetable](http://aikataulut.reittiopas.fi/pysakit/fi/1040112.html).
-
-## Object properties
-
-* stop.origId: Code shown to the public on the physical stop.
-* stop.name
-* stop.ll.toDeg(): Coordinates in WGS84 degrees, members llat and llon.
-* stop.lineList, stop.posList: Lines passing by stop and stop's index in their stopList.
-
-* line.stopList
-* line.tripList
-
-* trip.key.line
-* trip.key.shortCode: For example bus number.
-* trip.key.name: Typically list of important areas along the route, both directions usually have an identical name.
-* trip.key.sign: Destination name visible in front of the vehicle.
-
-* trip.valid: Bit mask when the trip is available, bit 0 is first day in data, bit 1 is second...
-* trip.startTime: Departure time from first stop in seconds from midnight.
-* trip.timeList: Departure/arrival times on all stops along the line.
-
-## Examples
-
-Print numbers of all lines that stop at Konemies:
-
-```js
-transSet.lineSet.find({
-	stops:transSet.stopSet.find({name:'konemies'})
-}).map(function(line) {
-	return(line.tripList[0].key.shortCode)
-})
-```
 
 ## Structure of compressed data
 

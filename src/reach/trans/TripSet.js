@@ -36,7 +36,7 @@ reach.trans.TripSet=function() {
 };
 
 /** @type {number} */
-reach.trans.TripSet.tolerance=1;
+reach.trans.TripSet.tolerance=15;
 
 /** @param {reach.trans.Trip} trip */
 reach.trans.TripSet.prototype.insert=function(trip) {
@@ -103,7 +103,7 @@ reach.trans.TripSet.prototype.importTempPack=function(stream,keySet) {
 		}
 
 		trip.timeList=timeList;
-		trip.startTime=timeList[0];
+//		trip.startTime=timeList[0];
 		tripList[tripNum]=trip;
 	}
 
@@ -153,6 +153,7 @@ reach.trans.TripSet.prototype.groupTrips=function() {
 
 /** @param {gis.io.PackStream} stream */
 reach.trans.TripSet.prototype.exportPack=function(stream) {
+	var tolerance;
 	var validGroupList;
 	var validList;
 	var validNum,validCount;
@@ -168,13 +169,15 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 	var txt;
 	var lz;
 
+	tolerance=reach.trans.TripSet.tolerance;
+
 	validGroupList=this.validGroupList;
 	validList=this.validList;
 	validCount=validList.length;
 
 	lz=new gis.enc.LZ();
 
-	stream.writeLong([validCount]);
+	stream.writeLong([tolerance,validCount]);
 	stream.writeLong(validList);
 	depart=0;
 
@@ -190,7 +193,7 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 			trip=tripList[tripNum];
 
 			prevDepart=depart;
-			depart=~~(trip.timeList[0]/reach.trans.TripSet.tolerance+0.5);
+			depart=~~(trip.timeList[0]/tolerance+0.5);
 			prevWait=wait;
 			wait=depart-prevDepart;
 
@@ -228,12 +231,14 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 			timeList=tripList[tripNum].timeList;
 			timeCount=timeList.length;
 			row=[];
+			prevDepart=0;
 
 			for(timeNum=1;timeNum<timeCount;timeNum++) {
-				err=timeList[timeNum]/reach.trans.TripSet.tolerance;
-				if(err<0) err=-~~(-err+0.5);
-				else err=~~(err+0.5);
-				row[timeNum-1]=gis.Q.fromSigned(err);
+				depart=~~(timeList[timeNum]/tolerance+0.5);
+				if(depart<prevDepart) depart=prevDepart;
+
+				row[timeNum-1]=depart-prevDepart;
+				prevDepart=depart;
 			}
 
 			data.push(stream.encodeShort(row));
@@ -251,6 +256,7 @@ reach.trans.TripSet.prototype.exportPack=function(stream) {
 reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 	/** @type {reach.trans.TripSet} */
 	var self=this;
+	var tolerance;
 	var validGroupList;
 	var validList;
 	var validNum;
@@ -292,8 +298,9 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 				lz=new gis.enc.LZ();
 
 				dec=/** @type {Array.<number>} */ ([]);
-				stream.readLong(dec,1);
-				validCount=dec[0];
+				stream.readLong(dec,2);
+				tolerance=dec[0];
+				validCount=dec[1];
 				validNum=0;
 				tripNum=0;
 				tripLast=0;
@@ -342,10 +349,10 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 				}
 
 				for(timeNum=0;timeNum<timeCount;timeNum++) {
-					depart=timeList[timeNum]*reach.trans.TripSet.tolerance;
+					depart=timeList[timeNum]*tolerance;
 
 					trip=new reach.trans.Trip(key);
-					trip.startTime=depart;
+//					trip.startTime=depart;
 					trip.timeList=[depart];
 					trip.valid=valid;
 
@@ -366,9 +373,10 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 					trip=self.list[tripNum];
 					timeCount=trip.key.seq.stopList.length-1;
 					pack.readShort(dec,timeCount);
+					time=0;
 
 					for(timeNum=0;timeNum<timeCount;timeNum++) {
-						time=gis.Q.toSigned(dec[timeNum])*reach.trans.TripSet.tolerance;
+						time+=dec[timeNum]*tolerance;
 						trip.timeList[timeNum+1]=time;
 					}
 				}
@@ -384,15 +392,23 @@ reach.trans.TripSet.prototype.importPack=function(stream,keySet) {
 };
 
 /** Add trips to their respective stop sequences.
-  * @param {number} mask */
-reach.trans.TripSet.prototype.bindSeqs=function(mask) {
-	var validList;
+  * @param {number} day
+  * @param {number} dayStamp
+  * @param {number} first
+  * @param {number} last */
+reach.trans.TripSet.prototype.bindSeqs=function(day,dayStamp,first,last) {
+	var mask;
 	var validGroupList;
+	var validList;
 	var validNum,validCount;
 	var tripList;
 	var tripNum,tripCount;
 	var trip;
+	var stamp;
 	var seq;
+
+	mask=1<<day;
+//console.log(new Date(dayStamp));
 
 	validGroupList=this.validGroupList;
 	validList=this.validList;
@@ -406,9 +422,13 @@ reach.trans.TripSet.prototype.bindSeqs=function(mask) {
 
 		for(tripNum=0;tripNum<tripCount;tripNum++) {
 			trip=tripList[tripNum];
-			seq=trip.key.seq;
+			stamp=dayStamp+trip.timeList[0]*1000;
+			if(stamp<first || stamp>last) continue;
+//			if(trip.key.shortCode=='65N') console.log(trip.key.shortCode+' '+trip.key.sign+' '+trip.startTime+' '+new Date(stamp));
 
+			seq=trip.key.seq;
 			seq.tripList.push(trip);
+			seq.stampList.push(stamp);
 		}
 	}
 };

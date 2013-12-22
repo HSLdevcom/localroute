@@ -58,7 +58,8 @@ gis.osm.NodeSet.prototype.createNode=function(ll,updateList) {
 
 	node=new gis.osm.Node(ll);
 	if(updateList) {
-		node.iterId=this.count;
+//		Note: This messes up export! TODO: iterId would have to be cleared in way.exportPack.
+//		node.iterId=this.count;
 		this.list[this.count++]=node;
 	}
 

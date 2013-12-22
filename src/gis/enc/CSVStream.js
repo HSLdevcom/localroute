@@ -22,6 +22,7 @@
 goog.provide('gis.enc.CSVStream');
 
 /** @constructor
+  * @export
   * @extends {Stream.Transform} */
 gis.enc.CSVStream=function() {
 	Stream.Transform.call(this);
@@ -41,7 +42,7 @@ gis.enc.CSVStream=function() {
 
 try {
 	eval("Stream=require('stream');");
-	eval("require('util').inherits(gis.enc.CSVStream,Stream.Transform);");
+	if(typeof('require')!='undefined') require('util').inherits(gis.enc.CSVStream,Stream.Transform);
 } catch(e) {}
 
 /** @param {string} line
@@ -123,6 +124,7 @@ gis.enc.CSVStream.prototype.dump=function() {
 	var lineNum,lineCount;
 
 	groupList=this.groupList;
+	if(!groupList.length) return;
 	lineList=groupList[0];
 	lineCount=lineList.length;
 

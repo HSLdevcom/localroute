@@ -35,67 +35,76 @@
 	SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-goog.provide('gis.osm.Node');
-goog.require('gis.Obj');
-goog.require('gis.MU');
-goog.require('gis.osm.Meta');
+goog.provide('reach.trans.ShapeSet');
+goog.require('reach.trans.Shape');
 
-/** @constructor
-  * @param {gis.MU} ll */
-gis.osm.Node=function(ll) {
-	/** @type {gis.MU} */
-	this.ll=ll;
-	/** @type {Array.<gis.osm.Way>} List of ways passing through this node. */
-	this.wayList=[];
-	/** @type {Array.<number>} Node position along each way passing through it. */
-	this.posList=[];
-	/** @type {number} ID used as temporary value in various searches. */
-	this.iterId;
-
-	/** @type {Object.<string,string>} */
-	this.tagTbl;
-	/** @type {boolean} */
-	this.important;
-	/** @type {gis.osm.Meta} */
-	this.meta;
-
-	/** @type {gis.osm.Node} */
-	this.replacement;
-
-	/** @type {Array.<gis.osm.Way>} List of nearby ways with names. TODO: this would be unnecessary with a better data model for merged lanes. */
-	this.nameRefList=[];
+/** @constructor */
+reach.trans.ShapeSet=function() {
+	/** @type {Array.<reach.trans.Shape>} */
+	this.list=[];
+	/** @type {number} */
+	this.count=0;
 };
 
-/** @param {gis.osm.Way} way
-  * @param {number} pos */
-gis.osm.Node.prototype.addWay=function(way,pos) {
-	this.wayList.push(way);
-	this.posList.push(pos);
+/** @return {reach.trans.Shape} */
+reach.trans.ShapeSet.prototype.createShape=function() {
+	var shape;
+
+	shape=new reach.trans.Shape();
+	this.list[this.count++]=shape;
+
+	return(shape);
 };
 
-/** @param {gis.osm.Way} way
-  * @param {number} pos */
-gis.osm.Node.prototype.removeWay=function(way,pos) {
-	var wayList;
-	var wayNum,wayCount;
-	var posList;
+/** @param {gis.io.PackStream} stream
+  * @param {number} detail */
+reach.trans.ShapeSet.prototype.exportPack=function(stream,detail) {
+	var roundOff;
+	var shapeList;
+	var shapeNum,shapeCount,dropCount;
+	var shape;
 
-	wayList=this.wayList;
-	wayCount=wayList.length;
-	if(wayCount<2) {
-		if(wayCount==1 && wayList[0]!=way) console.log('ERROR removeWay');
-		this.wayList=[];
-		this.posList=[];
-		return;
+	roundOff=((1<<detail)-1)>>1;
+
+	dropCount=0;
+	shapeList=this.list;
+	shapeCount=shapeList.length;
+
+	for(shapeNum=0;shapeNum<shapeCount;shapeNum++) {
+		shape=shapeList[shapeNum];
+		if(shape.seqList.length==0) dropCount++;
 	}
 
-	posList=this.posList;
+	stream.writeLong([detail,shapeCount-dropCount]);
 
-	for(wayNum=wayCount;wayNum--;) {
-		if(wayList[wayNum]==way && posList[wayNum]==pos) {
-			wayList.splice(wayNum,1);
-			posList.splice(wayNum,1);
-			return;
-		}
+	for(shapeNum=0;shapeNum<shapeCount;shapeNum++) {
+		shape=shapeList[shapeNum];
+		if(shape.seqList.length==0) continue;
+
+		shape.exportPack(stream,detail,roundOff);
+	}
+};
+
+/** @param {gis.io.PackStream} stream
+  * @param {reach.trans.SeqSet} seqSet */
+reach.trans.ShapeSet.prototype.importPack=function(stream,seqSet) {
+	var detail;
+	var roundOff;
+	var shapeNum,shapeCount;
+	var shape;
+	var dec;
+
+	dec=/** @type {Array.<number>} */ ([]);
+
+	stream.readLong(dec,2);
+	detail=dec[0];
+	roundOff=((1<<detail)-1)>>1;
+
+	shapeCount=dec[1];
+	this.list=[];
+
+	for(shapeNum=0;shapeNum<shapeCount;shapeNum++) {
+		shape=this.createShape();
+		shape.importPack(stream,detail,roundOff,seqSet);
 	}
 };

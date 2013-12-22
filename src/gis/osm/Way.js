@@ -53,14 +53,17 @@ gis.osm.Way=function() {
 	/** @type {number} Index of first point in ptList, if points have been deleted from the beginning. */
 	this.ptStart=0;
 
+	/** @type {Array.<gis.osm.Node>} List of nodes, they define intersections while bends are irrelevant to routing. */
+	this.nodeList;
+	/** @type {Array.<number>} Cumulative distance along way to each node. */
+	this.nodeDistList;
+
 	/** @type {string} Street name. */
 	this.name;
 	/** @type {gis.osm.WayProfile} Road classification, access rights and other characteristics. */
 	this.profile;
-	/** @type {number} */
-//	this.id;
 
-	/** @type {gis.osm.Way} */
+	/** @type {gis.osm.Way} Next part of the way if it's split, for example partially outside loaded grid. */
 	this.next;
 
 	/** @type {boolean} */
@@ -68,26 +71,28 @@ gis.osm.Way=function() {
 	/** @type {boolean} */
 	this.important;
 
-	/** @type {number} */
+	/** @type {number} Temporary ID used in various traversals, for example during data export. */
 	this.iterId=0;
-	/** @type {Array.<number>} */
-	this.costList;
+	/** @type {number} Index to data table with a slot for each node along each way. */
+	this.dataPtr;
+	/** @type {number} Way unique ID. */
+	this.id;
 
-	/** @type {gis.osm.WayChain} */
+	/** @type {gis.osm.WayChain} Chain of ways used to link split ways of similar type. */
 	this.chain;
 
-	/** @type {Array.<gis.osm.Way>} */
+	/** @type {Array.<gis.osm.Way>} Other nearby ways. */
 	this.nearWayList;
 	/** @type {Array.<number>} */
 	this.nearPosList;
 
-	/** @type {Array.<number|gis.osm.Node>} */
+	/** @type {Array.<number|gis.osm.Node>} Other points not on the way but nearby along it. */
 	this.extraPtList;
-	/** @type {Array.<number>} */
+	/** @type {Array.<number>} Positions of the other points as fractional values between way points. */
 	this.extraPosList;
 };
 
-/** @typedef {{way:gis.osm.Way,sqDist:number,pos:number,posNext:number}} */
+/** @typedef {{way:gis.osm.Way,sqDist:number,pos:number,posNext:number,lat:number,lon:number}} */
 gis.osm.Way.Near;
 
 /** @enum {number} */
@@ -142,6 +147,19 @@ gis.osm.Way.prototype.demoteNode=function(pos) {
 
 	return(num);
 };
+
+/** @param {number} pos
+  * @return {gis.MU} */
+/*
+gis.osm.Way.prototype.getLL=function(pos) {
+	var pt;
+
+	pt=this.ptList[pos];
+	// Don't use gis.MU.ll.fromNum(pt) here because caller might not expect previously returned value to change after new call.
+	if(typeof(pt)=='number') return(gis.MU.fromNum(pt));
+	else return(pt.ll);
+};
+*/
 
 /** @return {gis.geom.BB} */
 gis.osm.Way.prototype.getBB=function() {
@@ -253,7 +271,7 @@ gis.osm.Way.prototype.simplify=function(tolerance) {
 	var bb;
 
 	bb=this.getBB();
-	scale=gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1));
+	scale=gis.MU.getScale(bb.lat1+((bb.lat2-bb.lat1)>>>1)).north;
 	minDist=tolerance/scale;
 	minDist*=minDist;
 
@@ -527,6 +545,7 @@ gis.osm.Way.prototype.importPack=function(stream,importTbl,nodeSet,state,profile
 	var key;
 	var group;
 	var ll;
+	var tmp;
 	var nodeList;
 	var node,node2;
 	var detail,tileSize;
@@ -643,6 +662,7 @@ if(!this.profile) console.log('Missing profile '+dec[1]+' / '+profileSet.wayProf
 				continue;
 			}
 		} else if(code==gis.osm.Way.Code.REF) {
+			if(!node) tmp=ptList[ptNum-1];
 			// New node defined by position along latest road segment, belonging to a sidewalk or similar.
 			src=gis.osm.Way.Src.REF;
 //lat2=lat;
@@ -686,8 +706,9 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 			node2.nameRefList.push(this);
 //lat=lat2;
 //lon=lon2;
+			if(!node) ptList[ptNum]=tmp;
 		} else if(code==gis.osm.Way.Code.NAMEREF) {
-			// Node on a sidewalk or similar, should be associated to this street.
+			// Node on a sidewalk or similar that should be associated to this street.
 			// TODO: this would be unnecessary with a better data model for merged lanes.
 			stream.readLong(dec,1);
 
@@ -697,6 +718,9 @@ ll=new gis.MU(latExtra<<detail,lonExtra<<detail);
 			node2.nameRefList.push(this);
 
 			src=gis.osm.Way.Src.NAMEREF;
+			// The reference doesn't add anything to current way's geometry so disregard this point.
+			ptNum--;
+			ptCount--;
 		} else {
 			// Reference to a previously stored node.
 			if(node) {
@@ -753,8 +777,9 @@ gis.osm.Way.prototype.calcDist=function() {
 	ptList=this.ptList;
 	ptCount=ptList.length;
 
-	for(ptNum=0;ptNum<ptCount;ptNum++) {
+	for(ptNum=this.ptStart;ptNum<ptCount;ptNum++) {
 		pt=ptList[ptNum];
+		if(!pt) continue;
 
 		llPrev=ll;
 		if(typeof(pt)=='number') {
@@ -771,6 +796,47 @@ gis.osm.Way.prototype.calcDist=function() {
 	this.distList=distList;
 };
 
+gis.osm.Way.prototype.getNodes=function() {
+	var nodeList;
+	var nodeCount;
+	var nodeDistList;
+	var distList;
+	var ptList;
+	var ptNum,ptCount;
+	var pt;
+	var posList;
+	var wayList;
+	var wayNum,wayCount;
+
+	nodeList=[];
+	nodeCount=0;
+
+	nodeDistList=[];
+	distList=this.distList;
+
+	ptList=this.ptList;
+	ptCount=ptList.length;
+
+	for(ptNum=this.ptStart;ptNum<ptCount;ptNum++) {
+		pt=ptList[ptNum];
+		if(!pt || typeof(pt)=='number') continue;
+
+		posList=pt.posList;
+		wayList=pt.wayList;
+		wayCount=wayList.length;
+
+		for(wayNum=0;wayNum<wayCount;wayNum++) {
+			if(wayList[wayNum]==this && posList[wayNum]==ptNum) posList[wayNum]=nodeCount;
+		}
+
+		nodeDistList[nodeCount]=distList[ptNum];
+		nodeList[nodeCount++]=pt;
+	}
+
+	this.nodeList=nodeList;
+	this.nodeDistList=nodeDistList;
+};
+
 /** @param {number} latSrc
   * @param {number} lonSrc
   * @param {number} pos
@@ -779,8 +845,9 @@ gis.osm.Way.prototype.calcDist=function() {
   * @param {number} dlatSrc
   * @param {number} dlonSrc
   * @param {number} angleWeight
+  * @param {number} distExtra
   * @return {gis.osm.Way.Near} */
-gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dlatSrc,dlonSrc,angleWeight) {
+gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dlatSrc,dlonSrc,angleWeight,distExtra) {
 	var ptList;
 	var pt;
 	var ll;
@@ -789,10 +856,9 @@ gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dla
 	var lon,lonPrev,dlon,dlon2;
 	var dist;
 	var offset;
-	var dot,cross,tan;
+	var dot,cross;
 
 	posPrev=-1;
-//	bestDist=-1;
 	ptList=this.ptList;
 
 	for(;pos<=posLast;pos++) {
@@ -831,40 +897,38 @@ gis.osm.Way.prototype.findNearest=function(latSrc,lonSrc,pos,posLast,nearest,dla
 		// Calculate distance from projected point to (latSrc,lonSrc).
 		dlat2=(latPrev+dlat*offset)-latSrc;
 		dlon2=(lonPrev+dlon*offset)-lonSrc;
-		dist=dlat2*dlat2+dlon2*dlon2;
 
 		if(angleWeight) {
 			// TODO: maybe dlat and dlon should be across a larger distance (3 points) if offset==0 or offset==1.
 			dot=dlat*dlatSrc+dlon*dlonSrc;
-			if(!dot) dist+=1<<30;	// If lines are perpendicular, return a large distance.
-			else {
-				cross=dlat*dlonSrc-dlon*dlatSrc;
-				tan=cross/dot*angleWeight;
-//console.log(angleWeight+'\t'+dist+'\t'+(tan*tan));
-				dist+=tan*tan;
-			}
+			// Never consider perpendicular lines to be nearby.
+			if(!dot) continue;
+
+			cross=dlat*dlonSrc-dlon*dlatSrc;
+			// Tangent*weight.
+			distExtra=cross/dot*angleWeight;
 		}
 
-//		if(bestDist<0 || dist<bestDist) {
+//		if(distExtra) {
+//			if(dlat2<0) dlat2-=distExtra;else dlat2+=distExtra;
+//			if(dlon2<0) dlon2-=distExtra;else dlon2+=distExtra;
+//		}
+
+		dist=dlat2*dlat2+dlon2*dlon2+distExtra*distExtra;
+
 		if(dist<nearest.sqDist) {
 			nearest.way=this;
 			nearest.sqDist=dist;
-//			bestOffset=offset;
-//console.log('\t'+pos+' '+posPrev);
 			nearest.pos=posPrev;
 			nearest.posNext=pos;
-nearest.offset=offset;
-// Debug lane merging.
-nearest.lat=dlat2+latSrc;
-nearest.lon=dlon2+lonSrc;
+			nearest.offset=offset;
+
+			nearest.lat=dlat2+latSrc;
+			nearest.lon=dlon2+lonSrc;
         }
 
 		posPrev=pos;
 	}
-
-//	if(bestDist<0) return(null);
-
-//	return({way:this,sqDist:bestDist,pos:bestPos,posNext:bestNext});
 };
 
 /** @param {string} name
