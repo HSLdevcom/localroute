@@ -95,6 +95,12 @@ reach.Api.init=function() {
 };
 
 /** @export */
+reach.Api.prototype.initConf=function() {
+	this.conf=new reach.route.Conf();
+	this.batch.prepareAccess(this.conf);
+};
+
+/** @export */
 reach.Api.prototype.preCalc=function(addrFrom,time) {
 	var locFrom;
 

@@ -161,18 +161,20 @@ reach.route.WayVisitor.prototype.visit=function(dijkstra,result) {
 			dijkstra.found(reach.route.WayVisitor.create(dijkstra,other,posOther,0,cost+1,time,src,enter));
 		}
 
-		// Find stops connected to node.
-		stopRefList=node.stopRefList;
-		if(stopRefList) {
-			refCount=stopRefList.length;
-			for(refNum=0;refNum<refCount;refNum++) {
-				ref=stopRefList[refNum];
+		if(conf.transCostPerMS) {
+			// Find stops connected to node.
+			stopRefList=node.stopRefList;
+			if(stopRefList) {
+				refCount=stopRefList.length;
+				for(refNum=0;refNum<refCount;refNum++) {
+					ref=stopRefList[refNum];
 
-				costDelta=ref.dist*conf.walkCostPerM;
-				if(costDelta<1) costDelta=1;
+					costDelta=ref.dist*conf.walkCostPerM;
+					if(costDelta<1) costDelta=1;
 
-				// Create visitor for stop found.
-				dijkstra.found(reach.route.StopVisitor.create(dijkstra,ref.stop,cost+costDelta,time+ref.dist*conf.walkTimePerM,src,enter));
+					// Create visitor for stop found.
+					dijkstra.found(reach.route.StopVisitor.create(dijkstra,ref.stop,cost+costDelta,time+ref.dist*conf.walkTimePerM,src,enter));
+				}
 			}
 		}
 	}
