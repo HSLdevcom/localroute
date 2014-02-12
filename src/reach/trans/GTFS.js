@@ -577,7 +577,7 @@ reach.trans.GTFS.prototype.importZip=function(path,startDate,totalDays,done) {
 	var self=this;
 	var fast;
 
-	fast=true;
+	fast=false;
 
 	function importStops() {self.importStops(self.readFile(path,'stops.txt'),importWeeks);}
 	function importWeeks() {self.importWeeks(self.readFile(path,'calendar.txt'),startDate,totalDays,importDays);}
