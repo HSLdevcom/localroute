@@ -1,7 +1,7 @@
 /*
 	This file is part of LocalRoute.js.
 
-	Written in 2012, 2013 by Juha Järvi
+	Written in 2012, 2013 by Juha JÃ¤rvi
 
 	To the extent possible under law, the author(s) have dedicated all          
 	copyright and related and neighboring rights to this software to the

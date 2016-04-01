@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 DIR=$( cd "$( dirname "$0" )" && pwd )
 GET=`which wget`
@@ -8,7 +8,7 @@ fi
 
 function download {
 	if [ ! -f "$DIR/$1" ]; then
-		( cd "$DIR" && $GET "http://closure-library.googlecode.com/git/closure/bin/build/$1" )
+		( cd "$DIR" && $GET "https://raw.githubusercontent.com/google/closure-library/master/closure/bin/build/$1" )
 	fi
 }
 
