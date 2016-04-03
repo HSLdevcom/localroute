@@ -29,7 +29,7 @@ Compile with plovr. Download `plovr.jar` into `bin` and run:
 
 ```sh
 cd build
-java -jar ../bin/plovr.jar plovr.json > ../dist/lr.js
+java -jar ../bin/plovr.jar build plovr.json > ../dist/lr.js
 ```
 
 OR
@@ -38,7 +38,7 @@ Compile with Google Closure Compiler. Download `compiler.jar` into `bin` and run
 
 ```sh
 cd build
-./compile-debug-shim.sh lr
+./compile-shim.sh lr
 ```
 
 Afterwards, copy `lr.js` from the directory `dist` to where you want it.
